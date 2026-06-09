@@ -503,7 +503,7 @@ function douradoChipFull(txt) {
   const inp = document.getElementById('douradoInputFull');
   if (inp) { inp.value = txt; inp.focus(); inp.setSelectionRange(txt.length, txt.length); }
 }
-document.getElementById('douradoFull').addEventListener('click', e => { if(e.target.id==='douradoFull') douradoCollapse(); });
+document.getElementById('douradoFull')?.addEventListener('click', e => { if(e.target.id==='douradoFull') douradoCollapse(); });
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────
 const COLORS = ['#b69d74','#00677b','#1f2839','#2fa874','#d94141','#3174b8','#a78bd4','#e0c44a','#60b85a','#d47aa7','#5ab8d4','#d4a77a'];
