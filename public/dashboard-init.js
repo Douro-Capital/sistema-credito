@@ -1,91 +1,5 @@
 
-// ──────────────────────────────────────────────────────────────────────────
-// initDashboard() — chamado pelo React após injetar os dados em window.*
-// ──────────────────────────────────────────────────────────────────────────
-window.initDashboard = function() {
-  // Aguarda Chart.js estar disponível
-  if (typeof Chart === 'undefined') {
-    setTimeout(window.initDashboard, 150);
-    return;
-  }
-  // Inicializa o dashboard na página home
-  try {
-    // Configura filtros searchable (ss-*)
-    if (typeof initSSFilters === 'function') initSSFilters();
-    // Abre a página inicial
-    showPage('home', null);
-    // Popula badges de notificações
-    if (typeof buildNotifBadge === 'function') buildNotifBadge();
-    // Configura sidebar rail
-    if (typeof _setSidebarRail === 'function') _setSidebarRail(false);
-    // Configura evento do botão Dourado
-    const btn = document.getElementById('douradoBtn');
-    if (btn) {
-      btn.onclick = function() {
-        const panel = document.getElementById('douradoPanel');
-        if (panel) panel.classList.toggle('open');
-      };
-    }
-    // Configura botão pin da sidebar
-    const pinBtn = document.getElementById('sidebarPinBtn');
-    if (pinBtn) {
-      pinBtn.onclick = function() { toggleSidebarPin(); };
-    }
-    // Configura botão info
-    const infoBtn = document.getElementById('sysInfoBtn');
-    if (infoBtn) {
-      infoBtn.onclick = function() { if (typeof openSysInfo === 'function') openSysInfo(); };
-    }
-    // Configura os filtros searchable
-    document.querySelectorAll('.filter-pill[id^="ss-"]').forEach(function(pill) {
-      const search = pill.querySelector('.ss-search');
-      const list   = pill.querySelector('.ss-list');
-      const label  = pill.querySelector('.ss-label');
-      const prefix = pill.dataset.prefix || '';
-      const allLbl = pill.dataset.all || 'Todos';
-      // Toggle dropdown
-      pill.addEventListener('click', function(e) {
-        if (e.target.closest('.ss-dropdown')) return;
-        const isOpen = pill.classList.contains('ss-open');
-        document.querySelectorAll('.filter-pill.ss-open').forEach(function(p) { p.classList.remove('ss-open'); });
-        if (!isOpen) { pill.classList.add('ss-open'); search && search.focus(); }
-      });
-      // Search
-      if (search) {
-        search.addEventListener('input', function() {
-          const q = search.value.toLowerCase();
-          list.querySelectorAll('.ss-opt').forEach(function(opt) {
-            opt.classList.toggle('ss-hidden', q && !opt.textContent.toLowerCase().includes(q));
-          });
-        });
-      }
-      // Select option
-      list && list.querySelectorAll('.ss-opt').forEach(function(opt) {
-        opt.addEventListener('click', function() {
-          const val = opt.dataset.value || '';
-          list.querySelectorAll('.ss-opt').forEach(function(o) { o.classList.remove('ss-active'); });
-          opt.classList.add('ss-active');
-          if (label) label.textContent = prefix + (val || allLbl);
-          pill.classList.remove('ss-open');
-          // Sincroniza com o <select> oculto
-          const pillId = pill.id.replace('ss-', '');
-          const sel = document.getElementById(pillId + 'Filter');
-          if (sel) { sel.value = val; if (typeof applyFilters === 'function') applyFilters(); }
-        });
-      });
-    });
-    // Fecha dropdowns ao clicar fora
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.filter-pill')) {
-        document.querySelectorAll('.filter-pill.ss-open').forEach(function(p) { p.classList.remove('ss-open'); });
-      }
-    });
-  } catch(err) {
-    console.error('[Douro] Erro na inicialização:', err);
-  }
-};
-
-/* ── CONTEÚDO DIDÁTICO do painel direito ── */
+  /* ── CONTEÚDO DIDÁTICO do painel direito ── */
   const _SYS_PROSE = [
     {
       title: 'Inicialização &amp; Modo',
@@ -151,8 +65,8 @@ window.initDashboard = function() {
       label:'Cálculos Financeiros', color:'blue',
       logs:[
         {t:'section', tx:'── TRATAMENTO E CÁLCULOS ──'},
-        {t:'info', tx:'[PROC] tratar() · D\\u0026A por nome da conta'},
-        {t:'dim', tx:'[D\\u0026A] "DEPRECIA" no nome → prioridade sobre 3.06.01'},
+        {t:'info', tx:'[PROC] tratar() · D\u0026A por nome da conta'},
+        {t:'dim', tx:'[D\u0026A] "DEPRECIA" no nome → prioridade sobre 3.06.01'},
         {t:'ok', tx:'[OK] Trimestralizado ITR+DFP · sem duplicatas'},
         {t:'ok', tx:'[OK] KPIs TTM/36M · EBITDA · DivLíq · FCF · ROE · ROIC'},
         {t:'ok', tx:'[SPREAD] ntnb_ref merge · .dt.normalize()'},
@@ -238,274 +152,7 @@ window.initDashboard = function() {
     const bD=document.getElementById('sysToggleDiagram');
     const bT=document.getElementById('sysToggleTerminal');
     const bS=document.getElementById('sysToggleShortcuts');
-    // reset all
-    [bD,bT,bS].forEach(b=>{ b.style.background='transparent'; b.style.color='#9a8a76'; b.style.boxShadow='none'; });
-    dg.style.display='none'; tm.style.display='none'; sk.style.display='none';
-    if(v==='diagram') {
-      dg.style.display='flex';
-      bD.style.background='linear-gradient(135deg,#b69d74,#d4b47a)'; bD.style.color='#fff'; bD.style.boxShadow='0 2px 8px rgba(182,157,116,.4)';
-    } else if(v==='terminal') {
-      tm.style.display='flex';
-      bT.style.background='#0d1117'; bT.style.color='#e6edf3'; bT.style.boxShadow='0 2px 8px rgba(0,0,0,.4)';
-      sysRenderTerminalAll();
-    } else {
-      sk.style.display='block';
-      bS.style.background='linear-gradient(135deg,#3174b8,#5b9bd5)'; bS.style.color='#fff'; bS.style.boxShadow='0 2px 8px rgba(49,116,184,.35)';
-    }
-  }
-
-  function sysSelectMod(idx) {
-    _sysCurrentMod = idx;
-    // highlight cards do diagrama
-    document.querySelectorAll('.sdg-card,.sdg-card--half').forEach(el => {
-      const modVal = el.closest('[data-mod]') ? parseInt(el.closest('[data-mod]').dataset.mod) : parseInt(el.dataset&&el.dataset.mod);
-      el.classList.toggle('sdg-card-active', modVal===idx);
-    });
-    document.querySelectorAll('[data-mod]').forEach(el => {
-      el.querySelectorAll('.sdg-card').forEach(c => {
-        c.classList.toggle('sdg-card-active', parseInt(el.dataset.mod)===idx);
-      });
-    });
-    // painel didático direito
-    const prose = _SYS_PROSE[idx];
-    if(prose) {
-      document.getElementById('sdgPanelTitle').innerHTML = prose.title;
-      const body = document.getElementById('sdgPanelBody');
-      body.style.animation='none';
-      body.innerHTML = prose.html;
-      body.style.animation='sdgCardIn .22s ease';
-    }
-    // terminal (se ativo, rola até a seção)
-    if(_sysView==='terminal') {
-      const sec = document.getElementById('termSec'+idx);
-      if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
-    }
-  }
-
-  /* Terminal: tipa TODOS os módulos em sequência ao abrir */
-  function sysRenderTerminalAll() {
-    if(_termTyping) { clearInterval(_termTyping); _termTyping=null; }
-    const logEl = document.getElementById('sysTermLog');
-    const proseEl = document.getElementById('sysTermProse');
-    logEl.innerHTML = '';
-    proseEl.innerHTML = '';
-    // achata todas as linhas de todos os módulos com marcadores de seção
-    const allLines = [];
-    _SYS_MODS.forEach(function(mod, mi) {
-      // separador de seção com ancora
-      allLines.push({t:'_anchor', id:'termSec'+mi});
-      mod.logs.forEach(function(ln) { allLines.push(ln); });
-    });
-    // popula prose de todos os módulos de uma vez (scroll serve como contexto)
-    _SYS_MODS.forEach(function(mod, mi) {
-      const prose = _SYS_PROSE[mi];
-      if(!prose) return;
-      const div = document.createElement('div');
-      div.className = 'tprose-card';
-      div.id = 'termProse'+mi;
-      div.style.cssText = 'border-color:rgba(182,157,116,.18);background:#faf7f2;margin-bottom:14px;';
-      div.innerHTML = '<h4>'+prose.title+'</h4>'+prose.html.replace(/<p class="sdg-prose-body"[^>]*>/g,'<p>').replace(/<div class="sdg-prose-highlight">/g,'<p style="font-style:italic;font-size:9.5px;color:#5a4a38;background:rgba(182,157,116,.08);border-left:2px solid #b69d74;padding:7px 10px;margin:8px 0;border-radius:0 5px 5px 0;">').replace(/<\/div>/g,'</p>');
-      proseEl.appendChild(div);
-    });
-    // tipa as linhas de log
-    let i=0;
-    _termTyping = setInterval(function() {
-      if(i>=allLines.length) { clearInterval(_termTyping); _termTyping=null; return; }
-      const ln = allLines[i++];
-      if(ln.t==='_anchor') {
-        const anc = document.createElement('div');
-        anc.id = ln.id;
-        logEl.appendChild(anc);
-      } else {
-        const div = document.createElement('div');
-        div.className = 'tlog-'+ln.t;
-        div.style.margin='0';
-        div.textContent = ln.tx;
-        logEl.appendChild(div);
-        logEl.scrollTop = logEl.scrollHeight;
-      }
-    }, 55);
-  }
-
-  function openSysInfo() {
-    document.getElementById('sysInfoModal').style.display='flex';
-    sysView('diagram');
-    sysSelectMod(0);
-  }
-  function closeSysInfo() {
-    document.getElementById('sysInfoModal').style.display='none';
-    if(_termTyping) { clearInterval(_termTyping); _termTyping=null; }
-  }
-  document.getElementById('sysInfoModal').addEventListener('click', e => { if(e.target.id==='sysInfoModal') closeSysInfo(); });
-  document.addEventListener('keydown', e => { if(e.key==='Escape'&&document.getElementById('sysInfoModal').style.display!=='none') closeSysInfo(); });
-
-// ── DOURADO FULLSCREEN ────────────────────────────────────────────────────
-const DF_HINTS = [
-  { label:'SÍNTESE',     title:'Síntese de Emissor',
-    examples:['Análise completa da Klabin','Me fala tudo sobre a Equatorial','Perfil completo da Rumo: fundamentos e spread'] },
-  { label:'FUNDAMENTOS', title:'Filtro por Fundamento',
-    examples:['Emissores com DL/EBITDA acima de 3.5x','Quais têm ROE abaixo de 8%?','Margem EBITDA maior que 25%'] },
-  { label:'TEMPORAL',    title:'Evolução Temporal de KPI',
-    examples:['Como evoluiu a alavancagem da Suzano?','Trajetória do EBITDA da Eneva nos últimos 12 meses','Como progrediu o FCF da Klabin?'] },
-  { label:'COMPARATIVO', title:'Comparação de Emissores',
-    examples:['Comparar Eneva e Engie em DL/EBITDA','Klabin vs Suzano: spread e alavancagem','Compare Energisa vs Cemig vs Copel'] },
-  { label:'ESTRESSE',    title:'Estresse de Liquidez',
-    examples:['Quais emissores em risco de refinanciamento?','Quais nomes com pressão de liquidez no setor elétrico?','Quem fica em apuros com juros altos?'] },
-  { label:'Z-SCORE',     title:'Análise de Spread',
-    examples:['Quais spreads mais subiram na carteira?','Quais spreads estão acima da mediana?','Quais emissores com spread mais alto por setor?'] },
-  { label:'BENCHMARK',   title:'Benchmark Setorial',
-    examples:['Equatorial vs média do setor elétrico em DL/EBITDA','Como a Raízen se compara ao setor?','Rumo vs peers de logística em alavancagem'] },
-  { label:'VENCIMENTOS', title:'Mapa de Vencimentos',
-    examples:['Perfil de vencimentos da carteira','Quais ativos vencem nos próximos 12 meses?','Estrutura de vencimentos da carteira'] },
-  { label:'RANKING',     title:'Ranking Dinâmico',
-    examples:['Quais spreads mais subiram no último ano?','Maiores posições por emissor','Ranking de alavancagem — maior para menor'] },
-  { label:'MULTI-FILTRO',title:'Query Multi-Critério',
-    examples:['Energia elétrica aprovada com duration acima de 4','Emissores rating AA com spread abaixo de 1.2%','Watch e saneamento com DL/EBITDA acima de 3x'] },
-];
-
-// glyphs SVG minimalistas — sem emojis
-const DF_GLYPHS = [
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 18 9 12 13 16 21 6"/><polyline points="17 6 21 6 21 10"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="7" x2="6" y2="7"/><line x1="6" y1="17" x2="18" y2="17"/><polyline points="14 3 18 7 14 11"/><polyline points="10 21 6 17 10 13"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="3" y1="12" x2="8" y2="12"/><line x1="16" y1="12" x2="21" y2="12"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="8" y1="4" x2="8" y2="20"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="4"/><polyline points="4 8 12 4 20 8"/><line x1="4" y1="12" x2="12" y2="16"/><line x1="20" y1="12" x2="12" y2="16"/></svg>',
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><line x1="9" y1="6" x2="15" y2="6"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="18" y1="9" x2="18" y2="15"/></svg>',
-];
-
-let _dfOpen = false;
-let _dfHintsVisible = false;
-let _dfInitialized = false;
-let _orbAnim = null;
-
-// ── ORB CANVAS ────────────────────────────────────────────────────────────
-function _initOrb() {
-  const cv = document.getElementById('dfOrbCanvas');
-  if (!cv || cv._orbRunning) return;
-  cv._orbRunning = true;
-  const ctx = cv.getContext('2d');
-  const W=34, H=34, cx=W/2, cy=H/2;
-  let t=0;
-  const pts = Array.from({length:5},(_,i)=>{
-    const a=(i/5)*Math.PI*2;
-    return { a, r:5+Math.random()*5, sp:.01+Math.random()*.015, sz:.7+Math.random()*1, al:.35+Math.random()*.45 };
-  });
-  function draw() {
-    ctx.clearRect(0,0,W,H);
-    const g=ctx.createRadialGradient(cx,cy,1,cx,cy,13);
-    g.addColorStop(0,'rgba(212,180,122,.85)'); g.addColorStop(.5,'rgba(182,157,116,.45)');
-    g.addColorStop(.85,'rgba(140,110,60,.15)'); g.addColorStop(1,'rgba(100,70,30,0)');
-    ctx.beginPath(); ctx.arc(cx,cy,13,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
-    const g2=ctx.createRadialGradient(cx-3,cy-3,0,cx,cy,7);
-    g2.addColorStop(0,'rgba(255,240,200,.5)'); g2.addColorStop(1,'rgba(255,240,200,0)');
-    ctx.beginPath(); ctx.arc(cx,cy,13,0,Math.PI*2); ctx.fillStyle=g2; ctx.fill();
-    for(const p of pts) {
-      p.a+=p.sp;
-      ctx.beginPath(); ctx.arc(cx+Math.cos(p.a)*p.r, cy+Math.sin(p.a)*p.r, p.sz,0,Math.PI*2);
-      ctx.fillStyle=`rgba(255,225,150,${p.al*(.7+.3*Math.sin(t*.04+p.a))})`;
-      ctx.fill();
-    }
-    t++; _orbAnim=requestAnimationFrame(draw);
-  }
-  draw();
-}
-
-// ── RENDER LIQUID GLASS CARDS ─────────────────────────────────────────────
-function _renderLGCards() {
-  const list=document.getElementById('dfHintsList');
-  if(!list||list._lgRendered) return;
-  list._lgRendered=true;
-  list.innerHTML=DF_HINTS.map((h,i)=>`
-    <div class="df-lg-card" style="animation-delay:${i*.04}s">
-      <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">
-        <div class="df-lg-icon" style="color:rgba(182,157,116,.85)">${DF_GLYPHS[i%DF_GLYPHS.length]}</div>
-        <span class="df-lg-title">${h.label}</span>
-      </div>
-      ${h.examples.map(ex=>`
-        <div class="df-lg-ex" onclick="dfUseHint(${JSON.stringify(ex)})">
-          <span class="df-lg-arr">›</span>
-          <span>${ex}</span>
-        </div>`).join('')}
-    </div>`).join('');
-}
-
-// ── EXPAND / COLLAPSE / TOGGLE ────────────────────────────────────────────
-function douradoExpand() {
-  const full=document.getElementById('douradoFull');
-  full.style.display='flex'; _dfOpen=true; _initOrb();
-  if(!_dfInitialized) {
-    _dfInitialized=true;
-    const src=document.getElementById('douradoMsgs'), dst=document.getElementById('douradoFullMsgs');
-    if(src&&dst) { dst.innerHTML=src.innerHTML; dst.scrollTop=dst.scrollHeight; }
-    _renderLGCards();
-  }
-}
-function douradoCollapse() {
-  document.getElementById('douradoFull').style.display='none';
-  _dfOpen=false; _dfHintsVisible=false;
-  document.getElementById('dfHintsPanel').style.display='none';
-  if(_orbAnim){cancelAnimationFrame(_orbAnim);_orbAnim=null;}
-  const cv=document.getElementById('dfOrbCanvas'); if(cv) cv._orbRunning=false;
-}
-function toggleDFHints() {
-  _dfHintsVisible=!_dfHintsVisible;
-  const panel=document.getElementById('dfHintsPanel');
-  panel.style.display=_dfHintsVisible?'block':'none';
-  if(_dfHintsVisible) _renderLGCards();
-}
-function dfUseHint(ex) {
-  const inp=document.getElementById('douradoInputFull');
-  if(inp){inp.value=ex;inp.focus();}
-  // Force-collapse the hints panel without toggling the flag through toggleDFHints
-  _dfHintsVisible=false;
-  const panel=document.getElementById('dfHintsPanel');
-  if(panel) panel.style.display='none';
-  douradoSendFull();
-}
-function _douradoAddMsgBoth(role, text) {
-  douradoAddMsg(role, text);
-  const fullMsgs = document.getElementById('douradoFullMsgs');
-  if (!fullMsgs || !_dfOpen) return;
-  const div = document.createElement('div');
-  div.className = `dourado-msg ${role==='user'?'user':''}`;
-  if (role === 'bot') {
-    div.innerHTML = `<div class="dourado-avatar" style="width:28px;height:28px;font-size:12px;flex-shrink:0;">D</div><div class="dourado-bubble">${_renderMd(text)}</div>`;
-  } else {
-    div.innerHTML = `<div class="dourado-bubble">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
-  }
-  fullMsgs.appendChild(div);
-  fullMsgs.scrollTop = fullMsgs.scrollHeight;
-}
-function douradoSendFull() {
-  _dspHide();
-  const inp = document.getElementById('douradoInputFull');
-  const txt = (inp.value || '').trim();
-  if (!txt) return;
-  inp.value = '';
-  if(_dfHintsVisible) toggleDFHints();
-  if(txt.startsWith('/')) { if(_douradoCmd(txt)) return; }
-  _douradoAddMsgBoth('user', txt);
-  setTimeout(() => {
-    const resp = _nlqRespond(txt);
-    if (resp && resp.text) {
-      _douradoAddMsgBoth('bot', resp.text);
-      if (resp.chart) _addChatChart(resp.chartTitulo || '', resp.chart);
-    } else if (typeof resp === 'string') {
-      _douradoAddMsgBoth('bot', resp);
-    }
-  }, 320);
-}
-function douradoChipFull(txt) {
-  const inp = document.getElementById('douradoInputFull');
-  if (inp) { inp.value = txt; inp.focus(); inp.setSelectionRange(txt.length, txt.length); }
-}
-document.getElementById('douradoFull')?.addEventListener('click', e => { if(e.target.id==='douradoFull') douradoCollapse(); });
-
-// ── CONSTANTES ────────────────────────────────────────────────────────────
+    // ── CONSTANTES ────────────────────────────────────────────────────────────
 const COLORS = ['#b69d74','#00677b','#1f2839','#2fa874','#d94141','#3174b8','#a78bd4','#e0c44a','#60b85a','#d47aa7','#5ab8d4','#d4a77a'];
 /* ── CROSSHAIR PLUGIN (linha vertical que snapa em X para todas as séries) ── */
 const _crosshairPlugin = {
@@ -592,12 +239,15 @@ function mk(id, cfg) {
   }
 }
 // ── HELPERS ───────────────────────────────────────────────────────────────
-const fmtBRL = v => v==null?'—': v>=1e9?`R$ ${(v/1e9).toFixed(2)}Bi`: v>=1e6?`R$ ${(v/1e6).toFixed(1)}Mi`: v>=1e3?`R$ ${(v/1e3).toFixed(0)}Ki`:`R$ ${Number(v).toFixed(0)}`;
+const fmtBRL = v => v==null?'—': v>=1e9?`R$ ${(v/1e9).toFixed(2)}Bi`: v>=1e6?`R$ ${(v/1e6).toFixed(1)}Mi`: v>=1e3?`R$ ${(v/1e3).toFixed(0)}K`:`R$ ${Number(v).toFixed(0)}`;
 const fmtPct = v => v==null?'—':`${(v*100).toFixed(1)}%`;
 const fmtX   = v => v==null?'—':`${Number(v).toFixed(2)}x`;
 const badgeStatus = s => {
   const m = {Aprovado:'badge-green', Reprovado:'badge-red', 'Em análise':'badge-gold', Watch:'badge-gold', Monitoramento:'badge-gold'};
   return `<span class="badge ${m[s]||'badge-muted'}">${s||'—'}</span>`;
+};
+const badgeExposure = v => {
+  return v ? '<span class="badge badge-red">Acima</span>' : '<span class="badge badge-muted">—</span>';
 };
 const badgeRating = r => {
   if (!r || r === 'N/D') return '<span class="badge badge-muted">—</span>';
@@ -605,6 +255,12 @@ const badgeRating = r => {
   const cls = aaa.includes(r)?'badge-blue': aa.includes(r)||a.includes(r)?'badge-teal': bbb.includes(r)||bb.includes(r)?'badge-gold': 'badge-red';
   return `<span class="badge ${cls}">${r}</span>`;
 };
+const htmlEncode = s => String(s||'')
+  .replace(/&/g,'&amp;')
+  .replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;')
+  .replace(/'/g,'&#39;');
 // ── FILTROS ───────────────────────────────────────────────────────────────
 function getFiltered() {
   const cart    = document.getElementById('carteiraFilter').value;
@@ -657,10 +313,12 @@ function showPage(id, el) {
     performance: buildPerformance,
     financeiros: buildFinanceiros,
     fundamentos: buildFundamentos,
+    timeline: buildTimeline,
     bancos: buildBancos,
     'douro-news': buildDouroNews,
     notificacoes: buildNotificacoes,
-    scorecard: buildScorecard
+    scorecard: buildScorecard,
+    'compras-vendas': buildComprasVendas
   };
   const hBtn = document.getElementById('homeBtnTopbar');
   if (hBtn) hBtn.classList.toggle('active', id === 'home');
@@ -717,6 +375,17 @@ function getCorStatus(nomeEmissor) {
 // ── BAR-CLICK EMISSOR FILTER ───────────────────────────────────────────────
 let _emFiltroBar = null;
 let _cachedAtivos = [], _cachedTotalCred = 0, _cachedPLFilt = 0;
+let _ativosAcimaLimite = false;
+function _toggleAcimaLimite() {
+  _ativosAcimaLimite = !_ativosAcimaLimite;
+  const btn = document.getElementById('btnAcimaLimite');
+  if (btn) {
+    btn.style.background = _ativosAcimaLimite ? 'rgba(217,65,65,.12)' : 'var(--surface2)';
+    btn.style.borderColor = _ativosAcimaLimite ? '#d94141' : 'var(--border)';
+    btn.style.color = _ativosAcimaLimite ? '#d94141' : 'var(--text3)';
+  }
+  _renderTbodyAtivos();
+}
 let _setorFiltroDonut = null;
 let _ratingFilter = { classe: null, ratingMkt: null, ratingDouro: null };
 
@@ -739,9 +408,41 @@ function _ativosSortReset() {
 }
 function _renderTbodyAtivos() {
   const q = (document.getElementById('ativosSearch')?.value || '').toLowerCase().trim();
+  // Pre-compute emissor saldo totals from full cached set
+  const _emissorSaldo = {};
+  _cachedAtivos.forEach(a => {
+    const em = a.emissor || '—';
+    _emissorSaldo[em] = (_emissorSaldo[em] || 0) + (a.saldo || 0);
+  });
+  const _expMaxPct = a => {
+    const raw = a.Status === 'Reprovado' ? 0 : (a.exposicao_maxima_rating || 0);
+    return raw > 0 && raw < 1 ? raw * 100 : raw;
+  };
+  const _emissorCarteiraSaldo = {};
+
+_cachedAtivos.forEach(a => {
+    const key = `${a.carteira}|||${a.emissor}`;
+
+    _emissorCarteiraSaldo[key] =
+        (_emissorCarteiraSaldo[key] || 0) +
+        (a.saldo || 0);
+});
+  const _pctEmissor = a => {
+    const key = `${a.carteira}|||${a.emissor}`;
+    const plCart = (typeof PL_POR_CARTEIRA !== 'undefined' && PL_POR_CARTEIRA[a.carteira]) ? PL_POR_CARTEIRA[a.carteira] : _cachedPLFilt;
+    return plCart > 0
+        ? (_emissorCarteiraSaldo[key] || 0) / plCart * 100
+        : 0;
+};
+  const _isAcima = a => {
+    const pct = _pctEmissor(a);
+    const exp = _expMaxPct(a);
+    return (a.Status === 'Reprovado' && pct > 0) || (exp > 0 && pct > exp);
+  };
   let source = _cachedAtivos;
   if (_setorFiltroDonut) source = source.filter(a => (a.setor||'N/D') === _setorFiltroDonut);
   if (_emFiltroBar) source = source.filter(a => (a.emissor||'').toLowerCase() === _emFiltroBar.toLowerCase());
+  if (_ativosAcimaLimite) source = source.filter(a => _isAcima(a));
   if (q) {
     source = source.filter(a => {
       const fields = [a.carteira,a.ticker,a.emissor,a.setor,a.classe,a.Status,a['Rating base S&P'],a['Rating Douro']];
@@ -758,8 +459,8 @@ function _renderTbodyAtivos() {
       case 'emissor':   return dir * cmpStr(a.emissor, b.emissor);
       case 'setor':     return dir * cmpStr(a.setor, b.setor);
       case 'saldo':     return dir * cmpNum(a.saldo, b.saldo);
-      case 'pctCred':   return dir * cmpNum(a.saldo, b.saldo);
-      case 'pctPL':     return dir * cmpNum(a.saldo, b.saldo);
+      case 'pctCred':   return dir * cmpNum(_pctEmissorR(a), _pctEmissorR(b));
+      case 'pctPL':     return dir * cmpNum(_expMaxPctR(a), _expMaxPctR(b));
       case 'duration':  return dir * cmpNum(a.duration, b.duration);
       case 'classe':    return dir * cmpStr(a.classe, b.classe);
       case 'status':    return dir * cmpStr(a.Status, b.Status);
@@ -789,24 +490,55 @@ function _renderTbodyAtivos() {
   document.getElementById('countAtivos').textContent =
     hasFilter ? `— ${source.length} posição(ões) · ${_cachedAtivos.length} total` : `— ${source.length} de ${_cachedAtivos.length} posições`;
   document.getElementById('tbodyAtivos').innerHTML = source
-    .map(a => `<tr>
-      <td class="td-muted">${a.carteira||'—'}</td>
-      <td style="font-weight:700">${a.ticker||'—'}</td>
-      <td>${a.emissor||'—'}</td>
-      <td class="td-muted">${a.setor||'—'}</td>
-      <td style="font-family:var(--mono)">${fmtBRL(a.saldo)}</td>
-      <td style="font-family:var(--mono)">${_cachedTotalCred>0?(a.saldo/_cachedTotalCred*100).toFixed(2):0}%</td>
-      <td style="font-family:var(--mono)">${_cachedPLFilt>0?(a.saldo/_cachedPLFilt*100).toFixed(2):0}%</td>
-      <td style="font-family:var(--mono)">${a.duration?Number(a.duration).toFixed(1)+'a':'—'}</td>
-      <td class="td-muted">${a.classe||'—'}</td>
-      <td>${badgeRating(a['Rating base S&P'])}</td>
-      <td>${badgeRating(a['Rating Douro'])}</td>
-      <td>${badgeStatus(a.Status)}</td>
-    </tr>`).join('');
+    .map(a => {
+      const pctEm = _pctEmissor(a);
+      const expMax = _expMaxPct(a);
+      const acima = _isAcima(a);
+      const rowBg = acima ? 'background:rgba(217,65,65,.05);' : '';
+      const pctEmStyle = acima ? 'color:#d94141;font-weight:700;' : '';
+      const expMaxStr = a.Status === 'Reprovado' ? '0,00%' : (expMax > 0 ? expMax.toFixed(2)+'%' : '—');
+      return `<tr style="${rowBg}">
+        <td class="td-muted">${a.carteira||'—'}</td>
+        <td style="font-weight:700">${a.ticker||'—'}</td>
+        <td>${a.emissor||'—'}</td>
+        <td class="td-muted">${a.setor||'—'}</td>
+        <td style="font-family:var(--mono)">${fmtBRL(a.saldo)}</td>
+        <td style="font-family:var(--mono);${pctEmStyle}">${pctEm.toFixed(2)}%</td>
+        <td style="font-family:var(--mono)">${expMaxStr}</td>
+        <td style="font-family:var(--mono)">${a.duration?Number(a.duration).toFixed(1)+'a':'—'}</td>
+        <td class="td-muted">${a.classe||'—'}</td>
+        <td>${badgeRating(a['Rating base S&P'])}</td>
+        <td>${badgeRating(a['Rating Douro'])}</td>
+        <td>${badgeStatus(a.Status)}</td>
+      </tr>`;
+    }).join('');
 }
 
 function _renderTbodyAtivosRating() {
   const q = (document.getElementById('ativosSearchRating')?.value || '').toLowerCase().trim();
+  const _emissorSaldoR = {};
+  _cachedAtivos.forEach(a => {
+    const em = a.emissor || '—';
+    _emissorSaldoR[em] = (_emissorSaldoR[em] || 0) + (a.saldo || 0);
+  });
+  const _expMaxPctR = a => {
+    const raw = a.Status === 'Reprovado' ? 0 : (a.exposicao_maxima_rating || 0);
+    return raw > 0 && raw < 1 ? raw * 100 : raw;
+  };
+  const _emissorCarteiraSaldo = {};
+_cachedAtivos.forEach(a => {
+    const key = `${a.carteira}|||${a.emissor}`;
+    _emissorCarteiraSaldo[key] =
+        (_emissorCarteiraSaldo[key] || 0) +
+        (a.saldo || 0);
+});
+  const _pctEmissorR = a => {
+    const key = `${a.carteira}|||${a.emissor}`;
+    const plCart = (typeof PL_POR_CARTEIRA !== 'undefined' && PL_POR_CARTEIRA[a.carteira]) ? PL_POR_CARTEIRA[a.carteira] : _cachedPLFilt;
+    return plCart > 0
+        ? (_emissorCarteiraSaldo[key] || 0) / plCart * 100
+        : 0;
+  };
   let source = _cachedAtivos;
   if (_ratingFilter.classe) source = source.filter(a => (a.classe||'') === _ratingFilter.classe);
   if (_ratingFilter.ratingMkt) source = source.filter(a => (a['Rating base S&P']||'') === _ratingFilter.ratingMkt);
@@ -827,8 +559,8 @@ function _renderTbodyAtivosRating() {
       case 'emissor':   return dir * cmpStr(a.emissor, b.emissor);
       case 'setor':     return dir * cmpStr(a.setor, b.setor);
       case 'saldo':     return dir * cmpNum(a.saldo, b.saldo);
-      case 'pctCred':   return dir * cmpNum(a.saldo, b.saldo);
-      case 'pctPL':     return dir * cmpNum(a.saldo, b.saldo);
+      case 'pctCred':   return dir * cmpNum(_pctEmissor(a), _pctEmissor(b));
+      case 'pctPL':     return dir * cmpNum(_expMaxPct(a), _expMaxPct(b));
       case 'duration':  return dir * cmpNum(a.duration, b.duration);
       case 'classe':    return dir * cmpStr(a.classe, b.classe);
       case 'status':    return dir * cmpStr(a.Status, b.Status);
@@ -853,20 +585,28 @@ function _renderTbodyAtivosRating() {
   document.getElementById('countAtivosRating').textContent =
     hasFilter ? `— ${source.length} posição(ões) · ${_cachedAtivos.length} total` : `— ${source.length} de ${_cachedAtivos.length} posições`;
   document.getElementById('tbodyAtivosRating').innerHTML = source
-    .map(a => `<tr>
-      <td class="td-muted">${a.carteira||'—'}</td>
-      <td style="font-weight:700">${a.ticker||'—'}</td>
-      <td>${a.emissor||'—'}</td>
-      <td class="td-muted">${a.setor||'—'}</td>
-      <td style="font-family:var(--mono)">${fmtBRL(a.saldo)}</td>
-      <td style="font-family:var(--mono)">${_cachedTotalCred>0?(a.saldo/_cachedTotalCred*100).toFixed(2):0}%</td>
-      <td style="font-family:var(--mono)">${_cachedPLFilt>0?(a.saldo/_cachedPLFilt*100).toFixed(2):0}%</td>
-      <td style="font-family:var(--mono)">${a.duration?Number(a.duration).toFixed(1)+'a':'—'}</td>
-      <td class="td-muted">${a.classe||'—'}</td>
-      <td>${badgeRating(a['Rating base S&P'])}</td>
-      <td>${badgeRating(a['Rating Douro'])}</td>
-      <td>${badgeStatus(a.Status)}</td>
-    </tr>`).join('');
+    .map(a => {
+      const pctEmR = _pctEmissorR(a);
+      const expMaxR = _expMaxPctR(a);
+      const acimaR = (a.Status === 'Reprovado' && pctEmR > 0) || (expMaxR > 0 && pctEmR > expMaxR);
+      const rowBgR = acimaR ? 'background:rgba(217,65,65,.05);' : '';
+      const pctEmStyleR = acimaR ? 'color:#d94141;font-weight:700;' : '';
+      const expMaxStrR = a.Status === 'Reprovado' ? '0,00%' : (expMaxR > 0 ? expMaxR.toFixed(2)+'%' : '—');
+      return `<tr style="${rowBgR}">
+        <td class="td-muted">${a.carteira||'—'}</td>
+        <td style="font-weight:700">${a.ticker||'—'}</td>
+        <td>${a.emissor||'—'}</td>
+        <td class="td-muted">${a.setor||'—'}</td>
+        <td style="font-family:var(--mono)">${fmtBRL(a.saldo)}</td>
+        <td style="font-family:var(--mono);${pctEmStyleR}">${pctEmR.toFixed(2)}%</td>
+        <td style="font-family:var(--mono)">${expMaxStrR}</td>
+        <td style="font-family:var(--mono)">${a.duration?Number(a.duration).toFixed(1)+'a':'—'}</td>
+        <td class="td-muted">${a.classe||'—'}</td>
+        <td>${badgeRating(a['Rating base S&P'])}</td>
+        <td>${badgeRating(a['Rating Douro'])}</td>
+        <td>${badgeStatus(a.Status)}</td>
+      </tr>`;
+    }).join('');
 }
 
 function _clearRatingFiltro() {
@@ -942,12 +682,7 @@ function homeDiveEmp(empresa) {
 
 // ── HOME — COMMAND CENTER ─────────────────────────────────────────────────
 function buildHome() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-home');
-  if (_pg && !document.getElementById('homeKpiRow')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Panorama</h2><div class="accent-line"></div><span id="homeDataRef" style="font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap;"></span></div><div class="home-kpi-row" id="homeKpiRow"></div><div class="home-grid-main"><div class="card"><div class="card-title">Saldo Bruto por Emissor</div><div class="chart-scroll-wrap"><div class="chart-scroll-inner" id="homeChartEmissorWrap"><div style="height:300px;position:relative;"><canvas id="homeChartEmissor"></canvas></div></div></div></div><div class="card"><div class="card-title">Por Classe de Ativo</div><div style="height:300px;position:relative;"><canvas id="homeChartClasse"></canvas></div></div></div><div class="home-grid-bottom"><div class="card"><div class="card-title">Top 5 Corporativos — <span onclick="homeDiveScorecard('corp')" style="font-size:10px;color:var(--teal);text-transform:none;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Clique para Deep Dive →</span></div><div id="homeTop5Corp" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div></div><div class="card"><div class="card-title">Top 5 Bancos — <span onclick="homeDiveScorecard('banco')" style="font-size:10px;color:var(--teal);text-transform:none;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Clique para Deep Dive →</span></div><div id="homeTop5Bancos" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div></div></div><div class="home-grid-banks"><div class="card"><div class="card-title">Retorno Acumulado <span style="font-size:10px;color:var(--text3);text-transform:none;font-weight:400;">por carteira</span></div><div style="height:280px;position:relative;"><canvas id="homeChartPerf"></canvas></div></div></div>`;
-  }
-  const cartSel    = document.getElementById('carteiraFilter')?.value || '';
+  const cartSel    = document.getElementById('carteiraFilter').value;
   const ativosBase = cartSel ? ATIVOS.filter(a => a.carteira === cartSel) : ATIVOS;
   const ativos     = ativosBase.filter(a => (a.saldo || 0) > 0);
   const totalCred  = ativos.reduce((s, a) => s + (a.saldo || 0), 0);
@@ -963,8 +698,7 @@ function buildHome() {
     ? (ativos.reduce((s,a) => s+(a.duration||0)*(a.saldo||0), 0) / totalCred).toFixed(1) : '—';
   const nEmissores   = new Set(ativos.map(a => a.emissor).filter(Boolean)).size;
 
-  const _homeKpiRow = document.getElementById('homeKpiRow');
-  if (_homeKpiRow) _homeKpiRow.innerHTML = `
+  document.getElementById('homeKpiRow').innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Crédito Privado</div><div class="kpi-value">${fmtBRL(totalCred)}</div><div class="kpi-sub">${ativos.length} ativos · ${nEmissores} emissores</div></div>
     <div class="kpi-card"><div class="kpi-label">Duration Média</div><div class="kpi-value">${durPond}a</div><div class="kpi-sub">Ponderada por saldo</div></div>
     <div class="kpi-card"><div class="kpi-label">Aprovados</div><div class="kpi-value">${totalCred>0?((aprovados/totalCred)*100).toFixed(1):0}%</div><span class="kpi-badge green">${fmtBRL(aprovados)}</span></div>`;
@@ -1026,9 +760,8 @@ function buildHome() {
     }
   });
 
-  const top5Corp = (Array.isArray(RANK_CORP) ? RANK_CORP : []).slice(0,5);
-  const _homeTop5Corp = document.getElementById('homeTop5Corp');
-  if (_homeTop5Corp) _homeTop5Corp.innerHTML = top5Corp.map((rankInfo, i) => {
+  const top5Corp = RANK_CORP.slice(0,5);
+  document.getElementById('homeTop5Corp').innerHTML = top5Corp.map((rankInfo, i) => {
     const em    = rankInfo.empresa || '—';
     const setor = rankInfo.setor || '—';
     const saldo = ativos.filter(a=>a.emissor===em).reduce((s,a)=>s+(a.saldo||0),0);
@@ -1052,9 +785,8 @@ function buildHome() {
     </div>`;
   }).join('');
 
-  const top5Bancos = (Array.isArray(RANK_BANCOS) ? RANK_BANCOS : []).slice(0,5);
-  const _homeTop5Bancos = document.getElementById('homeTop5Bancos');
-  if (_homeTop5Bancos) _homeTop5Bancos.innerHTML = top5Bancos.map((rankInfo, i) => {
+  const top5Bancos = RANK_BANCOS.slice(0,5);
+  document.getElementById('homeTop5Bancos').innerHTML = top5Bancos.map((rankInfo, i) => {
     const em    = rankInfo.empresa || '—';
     const saldo = ativos.filter(a=>a.emissor===em).reduce((s,a)=>s+(a.saldo||0),0);
     return `<div style="display:flex;flex-direction:column;gap:0;margin-bottom:8px;padding:10px 12px;border-radius:8px;border:1px solid transparent;background:transparent;transition:background .15s;border:1px solid transparent;">
@@ -1103,11 +835,6 @@ function buildHome() {
 
 // ── COMPOSIÇÃO ─────────────────────────────────────────────────────────────
 function buildComposicao() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pgC = document.getElementById('page-composicao');
-  if (_pgC && !document.getElementById('kpiRow')) {
-    _pgC.innerHTML = `<div class="section-header"><h2>Composição da Carteira</h2><div class="accent-line"></div></div><div class="kpi-row" id="kpiRow"></div><div class="grid-2-1"><div class="card"><div class="card-title">Saldo Bruto % da Carteira Total por Emissor</div><div class="chart-scroll-wrap"><div class="chart-scroll-inner" id="chartEmissorWrap"><div style="height:320px;position:relative;"><canvas id="chartEmissor" style="cursor:pointer"></canvas></div></div></div><div id="emissorVerTodosChip" style="display:none;margin-top:8px;font-size:11px;color:var(--teal);text-align:right;cursor:pointer;font-weight:600;letter-spacing:.01em;"></div></div><div class="card"><div class="card-title">% por Setor</div><div class="h320"><canvas id="chartSetor"></canvas></div></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Detalhamento por Ativo <span id="countAtivos" style="color:var(--text3);font-size:11px;text-transform:none"></span><span id="emFiltroTag"></span></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div style="position:relative"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="ativosSearch" oninput="_renderTbodyAtivos()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div><button onclick="_ativosSortReset()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text3)">Limpar</button></div></div><div class="table-wrap"><table><thead><tr><th onclick="_ativosSort('carteira')" style="cursor:pointer;user-select:none;white-space:nowrap">Carteira <span id="_sh_carteira" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('ticker')" style="cursor:pointer;user-select:none;white-space:nowrap">Ticker <span id="_sh_ticker" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('emissor')" style="cursor:pointer;user-select:none;white-space:nowrap">Emissor <span id="_sh_emissor" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('setor')" style="cursor:pointer;user-select:none;white-space:nowrap">Setor <span id="_sh_setor" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('saldo')" style="cursor:pointer;user-select:none;white-space:nowrap">Saldo Bruto <span id="_sh_saldo" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_ativosSort('pctCred')" style="cursor:pointer;user-select:none;white-space:nowrap">% Credito <span id="_sh_pctCred" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('pctPL')" style="cursor:pointer;user-select:none;white-space:nowrap">% PL Total <span id="_sh_pctPL" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('duration')" style="cursor:pointer;user-select:none;white-space:nowrap">Duration <span id="_sh_duration" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('classe')" style="cursor:pointer;user-select:none;white-space:nowrap">Classe <span id="_sh_classe" style="opacity:.4">&#8597;</span></th><th>Rating Mkt</th><th>Rating Douro</th><th onclick="_ativosSort('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status <span id="_sh_status" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodyAtivos"></tbody></table></div></div>`;
-  }
   const ativos = getFiltered();
 const carteiraSelecionada =
   document.getElementById('carteiraFilter')?.value || '';
@@ -1130,8 +857,7 @@ const totalCredito =
   const analise      = ativos.filter(a => STATUS_ANALISE.includes(a.Status)).reduce((s,a) => s+(a.saldo||0), 0);
   const semCobertura = ativos.filter(a => !STATUS_COBERTOS.includes(a.Status)).reduce((s,a) => s+(a.saldo||0), 0);
   const uniqueTickers = new Set(ativos.map(a => a.ticker).filter(Boolean)).size;
-  const _kpiRow = document.getElementById('kpiRow');
-  if (_kpiRow) _kpiRow.innerHTML = `
+  document.getElementById('kpiRow').innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Saldo Crédito Privado</div><div class="kpi-value">${fmtBRL(totalCredito)}</div><div class="kpi-sub">${ativos.length} posições · ${uniqueTickers} tickers</div></div>
     <div class="kpi-card"><div class="kpi-label">% do PL Total</div><div class="kpi-value">${plFiltrado>0?(totalCredito/plFiltrado*100).toFixed(1):0}%</div><div class="kpi-sub">PL: ${fmtBRL(plFiltrado)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Aprovados</div><div class="kpi-value">${totalCredito>0?(aprovados/totalCredito*100).toFixed(1):0}%</div><span class="kpi-badge green">${fmtBRL(aprovados)}</span></div>
@@ -1164,13 +890,13 @@ const larguraGrafico = Math.max(emSort10.length * BAR_MIN_PX, 600);
 
 const inner = document.getElementById('chartEmissorWrap');
 if (inner) {
-  inner.style.width    = larguraGrafico + 'px';
+  inner.style.minWidth = larguraGrafico + 'px';
   inner.style.maxWidth = 'none';
   const chartDiv = inner.querySelector('div');
   if (chartDiv) { chartDiv.style.width = larguraGrafico + 'px'; chartDiv.style.height = CHART_H + 'px'; }
 }
 const canvasEmissor = document.getElementById('chartEmissor');
-if (canvasEmissor) { canvasEmissor.width = larguraGrafico; canvasEmissor.height = CHART_H; }
+if (canvasEmissor) { canvasEmissor.width = larguraGrafico; canvasEmissor.height = CHART_H; canvasEmissor.style.width = larguraGrafico + 'px'; canvasEmissor.style.height = CHART_H + 'px'; }
 
   const legendaStatus = [
     { label:'Aprovado',   cor:'#00677b' },
@@ -1341,11 +1067,6 @@ if (canvasEmissor) { canvasEmissor.width = larguraGrafico; canvasEmissor.height 
 
 // ── RATING ─────────────────────────────────────────────────────────────────
 function buildRating() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-rating');
-  if (_pg && !document.getElementById('chartClasse')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Classe e Rating</h2><div class="accent-line"></div></div><div class="grid-3"><div class="card"><div class="card-title">% por Classe de Ativo</div><div class="h260"><canvas id="chartClasse"></canvas></div></div><div class="card"><div class="card-title">% Rating de Mercado</div><div class="h260"><canvas id="chartRatingMkt"></canvas></div></div><div class="card"><div class="card-title">% Rating Proprietário (Douro)</div><div class="h260"><canvas id="chartRatingDouro"></canvas></div></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Detalhamento por Ativo <span id="countAtivosRating" style="color:var(--text3);font-size:11px;text-transform:none"></span><span id="emFiltroTagRating"></span></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div style="position:relative"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="ativosSearchRating" oninput="_renderTbodyAtivosRating()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div><button onclick="_ativosSortReset()" title="Resetar ordenacao" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text3);transition:all .15s" onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">Limpar</button></div></div><div class="table-wrap"><table><thead><tr><th onclick="_ativosSort('carteira')" style="cursor:pointer;user-select:none;white-space:nowrap">Carteira <span id="_sh_carteira_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('ticker')" style="cursor:pointer;user-select:none;white-space:nowrap">Ticker <span id="_sh_ticker_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('emissor')" style="cursor:pointer;user-select:none;white-space:nowrap">Emissor <span id="_sh_emissor_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('setor')" style="cursor:pointer;user-select:none;white-space:nowrap">Setor <span id="_sh_setor_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('saldo')" style="cursor:pointer;user-select:none;white-space:nowrap">Saldo Bruto <span id="_sh_saldo_rating" style="color:var(--teal);opacity:1">↓</span></th><th onclick="_ativosSort('pctCred')" style="cursor:pointer;user-select:none;white-space:nowrap">% Credito <span id="_sh_pctCred_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('pctPL')" style="cursor:pointer;user-select:none;white-space:nowrap">% PL Total <span id="_sh_pctPL_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('duration')" style="cursor:pointer;user-select:none;white-space:nowrap">Duration <span id="_sh_duration_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('classe')" style="cursor:pointer;user-select:none;white-space:nowrap">Classe <span id="_sh_classe_rating" style="opacity:.4">↕</span></th><th>Rating Mkt</th><th>Rating Douro</th><th onclick="_ativosSort('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status <span id="_sh_status_rating" style="opacity:.4">↕</span></th></tr></thead><tbody id="tbodyAtivosRating"></tbody></table></div></div>`;
-  }
   const carteiraSelecionada = document.getElementById('carteiraFilter')?.value || '';
   const plFiltrado = carteiraSelecionada ? (PL_POR_CARTEIRA[carteiraSelecionada] || 0) : PL_TOTAL;
   const ativos       = getFiltered();
@@ -1406,6 +1127,7 @@ function buildRating() {
 // ── DADOS FINANCEIROS ─────────────────────────────────────────────────────
 const finSelecionadas = new Set();
 let finInicializado = false;
+let _timelineInitialized = false;
 let _finAllDates = [];
 let _finDateMin = 0;
 let _finDateMax = Infinity;
@@ -1533,6 +1255,466 @@ function _fundRangeFill() {
   fill.style.width = (r - l) + '%';
 }
 
+function timelineInitSels() {
+  if (_timelineInitialized) return;
+  _timelineInitialized = true;
+  const sel = document.getElementById('timelineCompanyFilter');
+  if (!sel) return;
+  const companies = [...new Set(FATOS_RJ.map(e => e.empresa).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'pt-BR'));
+  sel.innerHTML = '<option value="">Todas as empresas</option>' + companies.map(c => `<option value="${htmlEncode(c)}">${htmlEncode(c)}</option>`).join('');
+}
+
+let _timelineDesign = 6;
+let _tl10Anim = null;
+function setTimelineDesign(n) {
+  _timelineDesign = n;
+  if (_tl10Anim) { cancelAnimationFrame(_tl10Anim); _tl10Anim = null; }
+  buildTimeline();
+}
+function buildTimeline() {
+  timelineInitSels();
+  const company = document.getElementById('timelineCompanyFilter')?.value || '';
+  const query = (document.getElementById('timelineSearch')?.value || '').toLowerCase().trim();
+  let items = FATOS_RJ.filter(item => {
+    if (company && item.empresa !== company) return false;
+    if (!query) return true;
+    return (item.fato||'').toLowerCase().includes(query)||(item.detalhes||'').toLowerCase().includes(query);
+  }).map(item => ({...item, ts: parseBRDate(item.data)||0})).sort((a,b)=>a.ts-b.ts);
+  const wrap = document.getElementById('timelineList');
+  const cnt = document.getElementById('timelineCount');
+  if (!wrap||!cnt) return;
+  cnt.textContent = items.length ? `${items.length} evento(s)` : '0 eventos';
+  if (!items.length) {
+    wrap.innerHTML = '<div style="padding:18px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:14px">Nenhum evento encontrado.</div>';
+    return;
+  }
+  if (_tl10Anim) { cancelAnimationFrame(_tl10Anim); _tl10Anim = null; }
+  switch(_timelineDesign) {
+    case 1: _tlD1(wrap,items); break;
+    case 2: _tlD2(wrap,items); break;
+    case 3: _tlD3(wrap,items); break;
+    case 4: _tlD4(wrap,items); break;
+    case 5: _tlD5(wrap,items); break;
+    case 6: _tlD6(wrap,items); break;
+    case 7: _tlD7(wrap,items); break;
+    case 8: _tlD8(wrap,items); break;
+    case 9: _tlD9(wrap,items); break;
+    case 10: _tlD10(wrap,items); break;
+    default: _tlD1(wrap,items);
+  }
+}
+/* ── Design 1: Clássico Vertical ── */
+function _tlD1(wrap,items) {
+  wrap.className='';
+  wrap.innerHTML='<div class="tl1-container">'+items.map(item=>`
+<div class="tl1-event">
+  <span class="tl1-date">${formatDateBR(item.data)}</span>
+  <div style="display:flex;flex-direction:column;align-items:center;padding-top:14px;position:relative;z-index:1"><div class="tl1-dot"></div></div>
+  <div class="tl1-card">
+    <div class="tl1-fato">${htmlEncode(item.fato||'—')}</div>
+    <div class="tl1-empresa">${htmlEncode(item.empresa||'—')}</div>
+    <div class="tl1-detalhe">${htmlEncode(item.detalhes||'—')}</div>
+  </div>
+</div>`).join('')+'</div>';
+}
+/* ── Design 2: Accordion por empresa ── */
+function _tlD2(wrap,items) {
+  wrap.className='';
+  const byEmp={};
+  items.forEach(it=>{ if(!byEmp[it.empresa||'—']) byEmp[it.empresa||'—']=[]; byEmp[it.empresa||'—'].push(it); });
+  let html='';
+  Object.keys(byEmp).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach((emp,i)=>{
+    const evts=byEmp[emp];
+    html+=`<div class="tl2-company${i===0?' open':''}" id="tl2co_${i}">
+<div class="tl2-header" onclick="(()=>{const el=document.getElementById('tl2co_${i}');el.classList.toggle('open')})()">
+  <span class="tl2-hname">${htmlEncode(emp)}</span>
+  <span class="tl2-hbadge">${evts.length}</span>
+  <svg class="tl2-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+</div>
+<div class="tl2-body"><div class="tl2-inner">
+${evts.map(it=>`<div class="tl2-item">
+  <div class="tl2-idate">${formatDateBR(it.data)}</div>
+  <div class="tl2-ifato">${htmlEncode(it.fato||'—')}</div>
+  <div class="tl2-idet">${htmlEncode(it.detalhes||'—')}</div>
+</div>`).join('')}
+</div></div></div>`;
+  });
+  wrap.innerHTML=html;
+}
+/* ── Design 3: Kanban por fase ── */
+function _tlD3(wrap,items) {
+  wrap.className='';
+  const COLS=[
+    {id:'rj',label:'Pedido RJ',kw:['pedido','requerimento','ajuiz']},
+    {id:'def',label:'Deferimento',kw:['deferimento','deferida','deferido']},
+    {id:'plan',label:'Plano',kw:['plano','aprovação','aprovado','apresentação']},
+    {id:'hom',label:'Homologação',kw:['homologação','homologado']},
+    {id:'enc',label:'Encerrado',kw:['encerramento','encerrado','extinção','extinta']},
+    {id:'out',label:'Outros',kw:[]}
+  ];
+  const buckets={};
+  COLS.forEach(c=>{buckets[c.id]=[];});
+  items.forEach(it=>{
+    const txt=((it.fato||'')+' '+(it.detalhes||'')).toLowerCase();
+    let placed=false;
+    for(let i=0;i<COLS.length-1;i++) {
+      if(COLS[i].kw.some(k=>txt.includes(k))) { buckets[COLS[i].id].push(it); placed=true; break; }
+    }
+    if(!placed) buckets['out'].push(it);
+  });
+  wrap.innerHTML='<div class="tl3-board">'+COLS.map(col=>`
+<div class="tl3-col">
+  <div class="tl3-colhead">${col.label} <span style="font-weight:400;opacity:.6">(${buckets[col.id].length})</span></div>
+  ${buckets[col.id].map(it=>`<div class="tl3-card">
+    <div class="tl3-cname">${htmlEncode(it.empresa||'—')}</div>
+    <div class="tl3-cdate">${formatDateBR(it.data)}</div>
+    <div class="tl3-cdet">${htmlEncode(it.detalhes||'—')}</div>
+  </div>`).join('')}
+</div>`).join('')+'</div>';
+}
+/* ── Design 4: Heatmap calendário ── */
+function _tlD4(wrap,items) {
+  wrap.className='';
+  const MNAMES=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const byYM={};
+  items.forEach(it=>{
+    const d=parseBRDate(it.data);
+    if(!d) return;
+    const dt=new Date(d);
+    const k=`${dt.getFullYear()}-${dt.getMonth()}`;
+    if(!byYM[k]) byYM[k]=[];
+    byYM[k].push(it);
+  });
+  const years=[...new Set(items.map(it=>{const d=parseBRDate(it.data);return d?new Date(d).getFullYear():null;}).filter(Boolean))].sort();
+  if(!years.length){wrap.innerHTML='<p style="color:var(--text3)">Sem dados com data válida.</p>';return;}
+  let selKey=null;
+  const maxCount=Math.max(1,...Object.values(byYM).map(a=>a.length));
+  function lvl(n){if(!n)return 0;const r=n/maxCount;return r<.25?1:r<.5?2:r<.75?3:4;}
+  function render(){
+    let html='<div style="margin-bottom:16px">';
+    html+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;">';
+    years.forEach(yr=>{
+      for(let m=0;m<12;m++){
+        const k=`${yr}-${m}`;
+        const n=(byYM[k]||[]).length;
+        const l=lvl(n);
+        const isActive=selKey===k;
+        html+=`<div class="tl4-cell tl4-c${l}${isActive?' active':''}" onclick="_tl4sel('${k}')" title="${yr} ${MNAMES[m]}">
+          <span class="tl4-cmon">${MNAMES[m]}</span>
+          <span class="tl4-cyear">${yr}</span>
+          <span class="tl4-cnum">${n||'·'}</span>
+        </div>`;
+      }
+    });
+    html+='</div>';
+    html+='<div class="tl4-detail" id="tl4detail">';
+    if(!selKey){
+      html+='<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Clique em um mês para ver os eventos</div>';
+    } else {
+      const evts=byYM[selKey]||[];
+      const [yr,m]=selKey.split('-');
+      html+=`<div class="tl4-detail-title">${MNAMES[parseInt(m)]} ${yr} — ${evts.length} evento(s)</div>`;
+      html+=evts.map(it=>`<div class="tl4-ditem">
+        <div class="tl4-dname">${htmlEncode(it.empresa||'—')}</div>
+        <div class="tl4-dfato">${htmlEncode(it.fato||'—')}</div>
+        <div class="tl4-ddet">${htmlEncode(it.detalhes||'—')}</div>
+      </div>`).join('');
+    }
+    html+='</div></div>';
+    wrap.innerHTML=html;
+  }
+  window._tl4sel=function(k){selKey=(selKey===k)?null:k;render();};
+  render();
+}
+/* ── Design 5: Multi-track horizontal ── */
+function _tlD5(wrap,items) {
+  wrap.className='';
+  const tracks={};
+  items.forEach(it=>{const e=it.empresa||'—';if(!tracks[e])tracks[e]=[];tracks[e].push(it);});
+  const allTs=items.map(it=>it.ts).filter(Boolean);
+  if(!allTs.length){wrap.innerHTML='<p style="color:var(--text3)">Sem dados.</p>';return;}
+  const tMin=Math.min(...allTs), tMax=Math.max(...allTs);
+  const span=tMax-tMin||1;
+  const W=900;
+  function xPct(ts){return((ts-tMin)/span*W).toFixed(1)+'px';}
+  const years=[...new Set(items.map(it=>{const d=parseBRDate(it.data);return d?new Date(d).getFullYear():null;}).filter(Boolean))].sort();
+  let html=`<div class="tl5-outer" style="max-height:480px;overflow-y:auto">
+<div style="min-width:${W+140}px">
+<div class="tl5-axis-row">
+  <div class="tl5-axis-label">Empresa</div>
+  <div class="tl5-axis-ticks" style="position:relative;height:100%;min-width:${W}px">
+    ${years.map(yr=>{
+      const d=new Date(yr,0,1);
+      const t=d.getTime();
+      if(t<tMin-86400000*180||t>tMax+86400000*180) return '';
+      const x=((t-tMin)/span*W).toFixed(1);
+      return `<div class="tl5-tick-mark" style="left:${x}px"></div><div class="tl5-tick-label" style="left:${x}px">${yr}</div>`;
+    }).join('')}
+  </div>
+</div>
+${Object.keys(tracks).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(emp=>`
+<div class="tl5-track">
+  <div class="tl5-track-name" title="${htmlEncode(emp)}">${htmlEncode(emp)}</div>
+  <div class="tl5-track-events" style="min-width:${W}px">
+    <div class="tl5-track-line"></div>
+    ${tracks[emp].map(it=>{
+      if(!it.ts) return '';
+      const x=((it.ts-tMin)/span*W).toFixed(1);
+      return `<div class="tl5-node-wrap" style="left:${x}px">
+        <div class="tl5-node"></div>
+        <div class="tl5-popup">
+          <div class="tl5-popup-date">${formatDateBR(it.data)}</div>
+          <div class="tl5-popup-fato">${htmlEncode(it.fato||'—')}</div>
+          <div class="tl5-popup-det">${htmlEncode(it.detalhes||'—')}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+</div>`).join('')}
+</div></div>`;
+  wrap.innerHTML=html;
+}
+/* ── Design 6: Glass Morphism ── */
+function _tlD6(wrap,items) {
+  wrap.className='';
+  const MONTHS=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  wrap.innerHTML='<div class="tl6-bg">'+items.map(item=>{
+    const d=parseBRDate(item.data);
+    const dt=d?new Date(d):null;
+    const dd=dt?String(dt.getDate()).padStart(2,'0'):'—';
+    const mm=dt?MONTHS[dt.getMonth()]:'';
+    const yy=dt?dt.getFullYear():'';
+    return `<div class="tl6-card">
+  <div class="tl6-badge"><div class="tl6-bd">${dd}</div><div class="tl6-bm">${mm}</div><div class="tl6-by">${yy}</div></div>
+  <div>
+    <div class="tl6-fato">${htmlEncode(item.fato||'—')}</div>
+    <div class="tl6-empresa">${htmlEncode(item.empresa||'—')}</div>
+    <div class="tl6-detalhe">${htmlEncode(item.detalhes||'—')}</div>
+  </div>
+</div>`;
+  }).join('')+'</div>';
+}
+/* ── Design 7: Radial SVG ── */
+function _tlD7(wrap,items) {
+  wrap.className='';
+  const total=items.length;
+  const R=130, cx=160, cy=160, r=8;
+  let selIdx=0;
+  function renderSVG(){
+    const pts=items.map((it,i)=>{
+      const angle=(i/total)*2*Math.PI-Math.PI/2;
+      return {x:cx+R*Math.cos(angle),y:cy+R*Math.sin(angle),i};
+    });
+    let svgLines=pts.map(p=>`<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="rgba(0,103,123,0.18)" stroke-width="1"/>`).join('');
+    let svgDots=pts.map(p=>{
+      const active=p.i===selIdx;
+      return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${active?r+3:r}" fill="${active?'#00677b':'rgba(0,103,123,.5)'}" stroke="${active?'#b69d74':'rgba(0,103,123,.4)'}" stroke-width="${active?2:1}" style="cursor:pointer;transition:all .2s" onclick="_tl7sel(${p.i})"/>`;
+    }).join('');
+    const it=items[selIdx];
+    const centerText=htmlEncode((it.empresa||'').split(' ').slice(0,2).join(' '));
+    return `<svg viewBox="0 0 320 320" width="320" height="320" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(0,103,123,.15)" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="${cx}" cy="${cy}" r="42" fill="rgba(0,103,123,.08)" stroke="rgba(0,103,123,.2)" stroke-width="1"/>
+  ${svgLines}${svgDots}
+  <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="11" font-weight="700" fill="#f5f5ef" font-family="inherit">${centerText}</text>
+  <text x="${cx}" y="${cy+10}" text-anchor="middle" font-size="9" fill="rgba(245,245,239,.45)" font-family="inherit">${total} eventos</text>
+</svg>`;
+  }
+  function renderList(){
+    return items.map((it,i)=>`<div class="tl7-item${i===selIdx?' sel':''}" onclick="_tl7sel(${i})">
+  <div class="tl7-idate">${formatDateBR(it.data)}</div>
+  <div class="tl7-iname">${htmlEncode(it.empresa||'—')}</div>
+  <div class="tl7-idet">${htmlEncode(it.fato||'—')}</div>
+</div>`).join('');
+  }
+  function render(){
+    wrap.innerHTML=`<div class="tl7-wrap">
+  <div class="tl7-svg-wrap" id="tl7svgwrap">${renderSVG()}</div>
+  <div>
+    <div style="padding:10px 12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--teal);font-family:var(--mono);font-weight:700;margin-bottom:4px">${formatDateBR(items[selIdx].data)}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">${htmlEncode(items[selIdx].empresa||'—')}</div>
+      <div style="font-size:10px;color:var(--teal);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${htmlEncode(items[selIdx].fato||'—')}</div>
+      <div style="font-size:12px;color:var(--text3);line-height:1.6">${htmlEncode(items[selIdx].detalhes||'—')}</div>
+    </div>
+    <div class="tl7-list">${renderList()}</div>
+  </div>
+</div>`;
+  }
+  window._tl7sel=function(i){selIdx=i;render();};
+  render();
+}
+/* ── Design 8: Film Roll ── */
+function _tlD8(wrap,items) {
+  wrap.className='';
+  const holes=Array.from({length:8},()=>'<div class="tl8-hole"></div>').join('');
+  const left='<div class="tl8-sprocket">'+holes+'</div>';
+  const right='<div class="tl8-sprocket">'+holes+'</div>';
+  const frames=items.map((it,i)=>`<div class="tl8-frame">
+  <div class="tl8-fnum">#${String(i+1).padStart(3,'0')}</div>
+  <div class="tl8-date">${formatDateBR(it.data)}</div>
+  <div class="tl8-empresa">${htmlEncode(it.empresa||'—')}</div>
+  <div><span class="tl8-fato">${htmlEncode(it.fato||'—')}</span></div>
+  <div class="tl8-det">${htmlEncode(it.detalhes||'—')}</div>
+</div>`).join('');
+  wrap.innerHTML=`<div class="tl8-strip">${left}${frames}${right}</div>`;
+}
+/* ── Design 9: Editorial / Jornal ── */
+function _tlD9(wrap,items) {
+  wrap.className='';
+  const now=new Date();
+  const articles=items.map(it=>{
+    const d=parseBRDate(it.data);
+    const isRecent=d&&(now-d)<1000*60*60*24*90;
+    return `<div class="tl9-article">
+  <div class="tl9-date">${isRecent?'<span class="tl9-breaking">Recente</span> ':''}${formatDateBR(it.data)}</div>
+  <div class="tl9-headline">${htmlEncode(it.empresa||'—')}</div>
+  <div class="tl9-byline">${htmlEncode(it.fato||'—')}</div>
+  <div class="tl9-body">${htmlEncode(it.detalhes||'—')}</div>
+</div>`;
+  }).join('');
+  wrap.innerHTML=`<div class="tl9-wrap">
+<div class="tl9-masthead">
+  <div class="tl9-pub">Douro Capital — Monitor de Crédito</div>
+  <div class="tl9-title">Eventos de Recuperação Judicial</div>
+  <div class="tl9-sub">${items.length} registros · Atualizado em ${new Date().toLocaleDateString('pt-BR')}</div>
+</div>
+<div class="tl9-cols">${articles}</div>
+</div>`;
+}
+/* ── Design 10: Neural Network Canvas ── */
+function _tlD10(wrap,items) {
+  wrap.className='';
+  wrap.innerHTML='<div class="tl10-wrap" id="tl10Outer"><canvas id="tl10Canvas"></canvas></div>';
+  const tooltip=document.getElementById('tl10Tooltip');
+  requestAnimationFrame(()=>{
+    const outer=document.getElementById('tl10Outer');
+    const canvas=document.getElementById('tl10Canvas');
+    if(!canvas||!outer) return;
+    const W=outer.clientWidth, H=outer.clientHeight||520;
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    /* Assign positions: cluster by company */
+    const companies=[...new Set(items.map(i=>i.empresa||'—'))];
+    const compColor={};
+    const palette=['#00677b','#b69d74','#4a9abe','#7c6c5a','#2a8f7a','#9b7ab0','#c47a3d','#5b8fb9','#a87c52','#3d9e8c'];
+    companies.forEach((c,i)=>{compColor[c]=palette[i%palette.length];});
+    /* Layout: companies in clusters arranged in a circle */
+    const nodes=[];
+    const clusterR=Math.min(W,H)*0.32;
+    companies.forEach((emp,ci)=>{
+      const ca=(ci/companies.length)*2*Math.PI;
+      const cx=W/2+clusterR*Math.cos(ca), cy=H/2+clusterR*Math.sin(ca);
+      const empItems=items.filter(it=>(it.empresa||'—')===emp);
+      empItems.forEach((it,j)=>{
+        const spread=30+empItems.length*8;
+        const a=(j/Math.max(1,empItems.length))*2*Math.PI;
+        nodes.push({
+          x:cx+Math.cos(a)*spread*(0.4+Math.random()*0.6),
+          y:cy+Math.sin(a)*spread*(0.4+Math.random()*0.6),
+          vx:(Math.random()-.5)*0.3,
+          vy:(Math.random()-.5)*0.3,
+          r:6+Math.random()*3,
+          item:it,
+          color:compColor[emp],
+          emp,
+          ox:cx+Math.cos(a)*spread*(0.4+Math.random()*0.6),
+          oy:cy+Math.sin(a)*spread*(0.4+Math.random()*0.6),
+        });
+      });
+    });
+    /* Particle stars */
+    const stars=Array.from({length:60},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,op:Math.random()}));
+    let mouse={x:-999,y:-999};
+    canvas.addEventListener('mousemove',e=>{
+      const rect=canvas.getBoundingClientRect();
+      mouse.x=e.clientX-rect.left; mouse.y=e.clientY-rect.top;
+      let hit=null;
+      nodes.forEach(n=>{ const dx=n.x-mouse.x,dy=n.y-mouse.y; if(Math.sqrt(dx*dx+dy*dy)<n.r+6) hit=n; });
+      if(hit){
+        tooltip.style.display='block';
+        tooltip.style.left=(e.clientX+16)+'px';
+        tooltip.style.top=(e.clientY-20)+'px';
+        tooltip.innerHTML=`<div class="tl10-tt-date">${formatDateBR(hit.item.data)}</div><div class="tl10-tt-name">${htmlEncode(hit.item.empresa||'—')}</div><div class="tl10-tt-fato">${htmlEncode(hit.item.fato||'—')}</div><div class="tl10-tt-det">${htmlEncode(hit.item.detalhes||'—')}</div>`;
+      } else { tooltip.style.display='none'; }
+    });
+    canvas.addEventListener('mouseleave',()=>{tooltip.style.display='none';});
+    let frame=0;
+    function draw(){
+      _tl10Anim=requestAnimationFrame(draw);
+      ctx.clearRect(0,0,W,H);
+      /* stars */
+      stars.forEach(s=>{
+        s.op+=.008*(Math.random()-.5);
+        s.op=Math.max(.05,Math.min(.7,s.op));
+        ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,2*Math.PI);
+        ctx.fillStyle=`rgba(245,245,239,${s.op.toFixed(2)})`;ctx.fill();
+      });
+      /* edges between same company nodes */
+      for(let i=0;i<nodes.length;i++){
+        for(let j=i+1;j<nodes.length;j++){
+          if(nodes[i].emp!==nodes[j].emp) continue;
+          const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y;
+          const dist=Math.sqrt(dx*dx+dy*dy);
+          if(dist>160) continue;
+          const alpha=(1-dist/160)*0.25;
+          ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);
+          ctx.strokeStyle=nodes[i].color.replace('#','rgba(').replace(/([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})/i,(m,r,g,b)=>`rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)},${alpha.toFixed(2)})`);
+          try{
+            ctx.strokeStyle=`rgba(${parseInt(nodes[i].color.slice(1,3),16)},${parseInt(nodes[i].color.slice(3,5),16)},${parseInt(nodes[i].color.slice(5,7),16)},${alpha.toFixed(2)})`;
+          }catch(e){}
+          ctx.lineWidth=1;ctx.stroke();
+        }
+      }
+      /* nodes */
+      nodes.forEach(n=>{
+        /* gentle float */
+        n.x+=n.vx; n.y+=n.vy;
+        const dx=n.x-n.ox,dy=n.y-n.oy;
+        n.vx-=dx*0.001; n.vy-=dy*0.001;
+        n.vx*=0.98; n.vy*=0.98;
+        /* clamp */
+        n.x=Math.max(n.r,Math.min(W-n.r,n.x));
+        n.y=Math.max(n.r,Math.min(H-n.r,n.y));
+        /* mouse repel */
+        const mdx=n.x-mouse.x,mdy=n.y-mouse.y;
+        const md=Math.sqrt(mdx*mdx+mdy*mdy);
+        if(md<80) { n.vx+=mdx/md*1.2; n.vy+=mdy/md*1.2; }
+        const isHover=md<n.r+6;
+        /* glow */
+        const grd=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*(isHover?3:2));
+        try{
+          const cr=parseInt(n.color.slice(1,3),16),cg=parseInt(n.color.slice(3,5),16),cb=parseInt(n.color.slice(5,7),16);
+          grd.addColorStop(0,`rgba(${cr},${cg},${cb},0.35)`);
+          grd.addColorStop(1,`rgba(${cr},${cg},${cb},0)`);
+          ctx.beginPath();ctx.arc(n.x,n.y,n.r*(isHover?3:2),0,2*Math.PI);
+          ctx.fillStyle=grd;ctx.fill();
+          /* core */
+          ctx.beginPath();ctx.arc(n.x,n.y,n.r*(isHover?1.4:1),0,2*Math.PI);
+          ctx.fillStyle=n.color;ctx.fill();
+          ctx.strokeStyle='rgba(245,245,239,0.25)';ctx.lineWidth=1;ctx.stroke();
+        }catch(e){}
+      });
+      /* pulse ring on random node every 90 frames */
+      if(frame%90===0 && nodes.length){
+        const n=nodes[Math.floor(Math.random()*nodes.length)];
+        (function pulse(pr){
+          if(pr>n.r*5) return;
+          try{
+            const cr=parseInt(n.color.slice(1,3),16),cg=parseInt(n.color.slice(3,5),16),cb=parseInt(n.color.slice(5,7),16);
+            ctx.beginPath();ctx.arc(n.x,n.y,pr,0,2*Math.PI);
+            ctx.strokeStyle=`rgba(${cr},${cg},${cb},${(1-pr/(n.r*5)).toFixed(2)})`;
+            ctx.lineWidth=1;ctx.stroke();
+          }catch(e){}
+          requestAnimationFrame(()=>pulse(pr+1));
+        })(n.r);
+      }
+      frame++;
+    }
+    draw();
+  });
+}
+
 function finInitSels() {
   if (finInicializado) return;
   finInicializado = true;
@@ -1549,7 +1731,7 @@ function finInitSels() {
 function parseBRDate(str) {
   if (!str || typeof str !== 'string') return null;
   if (str.includes('-')) {
-    const parts = str.split('T')[0].split('-').map(Number);
+    const parts = str.split('T')[0].split(' ')[0].split('-').map(Number);
     if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return null;
     const ts = new Date(parts[0], parts[1]-1, parts[2]).getTime();
     return isNaN(ts) ? null : ts;
@@ -1561,11 +1743,29 @@ function parseBRDate(str) {
   const ts = new Date(y, m-1, d).getTime();
   return isNaN(ts) ? null : ts;
 }
+function formatDateBR(str){
+  const ts = parseBRDate(str);
+  if(!ts) return str || '—';
+  const d = new Date(ts);
+  const meses = [
+    'jan','fev','mar','abr','mai','jun',
+    'jul','ago','set','out','nov','dez'
+  ];
+  return (
+    String(d.getDate()).padStart(2,'0') +
+    '/' +
+    meses[d.getMonth()] +
+    '/' +
+    d.getFullYear()
+  );
+}
 function finGetEmpsDisp() {
   const setor = document.getElementById('setorFinSel')?.value || '';
+  const q = (document.getElementById('finEmpSearch')?.value || '').toLowerCase().trim();
   return Object.keys(FIN_SERIES).filter(e => {
     if (setor && (FIN_SERIES[e]?.setor || 'Não Informado') !== setor) return false;
-    return true;
+    if (!q) return true;
+    return e.toLowerCase().includes(q);
   });
 }
 function finRenderEmpList() {
@@ -1599,22 +1799,17 @@ function finAddAll()    { finGetEmpsDisp().forEach(e => finSelecionadas.add(e));
 function finRemoveAll() { finSelecionadas.clear(); finRenderEmpList(); buildFinanceiros(); }
 function finOnSetorChange() { finRenderEmpList(); }
 function buildFinanceiros() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-financeiros');
-  if (_pg && !document.getElementById('finEmpList')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Dados</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Indicador</div><select class="custom-select" id="indFinSel" onchange="buildFinanceiros()" style="width:100%"><option value="DivLiquida/EBITDA">Dívida Líq / EBITDA</option><option value="Mg EBITDA 36M">Mg. EBITDA (%)</option><option value="Mg Bruta 36M">Mg. Bruta (%)</option><option value="Estrutura de Capital (D/D+E)">Estrutura de Capital</option><option value="ROE">ROE</option><option value="ROA">ROA</option><option value="ROIC">ROIC</option><option value="Liquidez Corrente">Liquidez Corrente</option><option value="Receita_TTM">Receita TTM</option><option value="EBITDA_TTM">EBITDA TTM</option><option value="FCF_TTM">FCF TTM</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Setor (CVM)</div><select class="custom-select" id="setorFinSel" onchange="finOnSetorChange()" style="width:100%"><option value="">Todos os Setores</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Empresas selecionadas</div><div id="finChipsWrap" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px;align-items:center"><span style="color:var(--text3);font-size:11px">Nenhuma selecionada — use os filtros</span></div></div></div><div style="margin-top:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Empresas disponíveis <span id="finEmpCount" style="color:var(--teal)"></span><button onclick="finAddAll()" style="margin-left:12px;background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.3);color:var(--teal);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">+ Adicionar todas</button><button onclick="finRemoveAll()" style="margin-left:6px;background:rgba(217,65,65,.1);border:1px solid rgba(217,65,65,.3);color:var(--red);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">× Limpar</button></div><div id="finEmpList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:100px;overflow-y:auto"></div></div><div style="margin-top:16px"><div class="glass-range-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.10em">Período</div><span id="finDateRangeLabel" class="glass-range-label"></span></div><div style="position:relative;height:32px;padding:0 8px"><div id="finRangeTrack" style="position:absolute;top:14px;left:8px;right:8px;height:5px;background:rgba(0,103,123,0.10);border-radius:999px"><div id="finRangeFill" style="position:absolute;height:100%;background:linear-gradient(90deg,rgba(0,103,123,.45),var(--teal));border-radius:999px;left:0%;width:100%;transition:left .04s,width .04s"></div></div><input type="range" id="finRangeMin" min="0" max="100" value="0" class="fin-range-inp" oninput="finRangeUpdate(event)"><input type="range" id="finRangeMax" min="0" max="100" value="100" class="fin-range-inp" oninput="finRangeUpdate(event)"></div></div></div></div><div class="card"><div class="card-title" id="finTitle">Indicador</div><div class="h320"><canvas id="chartFinMain"></canvas></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Painel de Indicadores — Último Período</div><div style="position:relative;flex-shrink:0"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="finPainelSearch" oninput="_finPainelRender()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div></div><div class="table-wrap"><table><thead><tr><th onclick="_finPainelSort('empresa')" style="cursor:pointer;user-select:none">Empresa <span id="_fpsh_empresa" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_finPainelSort('setor')" style="cursor:pointer;user-select:none">Setor (CVM) <span id="_fpsh_setor" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('rec')" style="cursor:pointer;user-select:none">Receita TTM <span id="_fpsh_rec" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('ebt')" style="cursor:pointer;user-select:none">EBITDA TTM <span id="_fpsh_ebt" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('mg')" style="cursor:pointer;user-select:none">Mg EBITDA <span id="_fpsh_mg" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('dl')" style="cursor:pointer;user-select:none">Div Liq/EBITDA <span id="_fpsh_dl" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('ec')" style="cursor:pointer;user-select:none">Estrutura Cap. <span id="_fpsh_ec" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('roe')" style="cursor:pointer;user-select:none">ROE <span id="_fpsh_roe" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('lc')" style="cursor:pointer;user-select:none">Liq. Corrente <span id="_fpsh_lc" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodyFin"></tbody></table></div></div>`;
-  }
   if (!finInicializado) { finInitSels(); finInicializado = true; }
   finRenderEmpList();
-  const ind      = document.getElementById('indFinSel')?.value;
+  const ind      = document.getElementById('indFinSel').value;
   const empresas = [...finSelecionadas];
   if (!empresas.length) {
     if (activeCharts['chartFinMain']) { activeCharts['chartFinMain'].destroy(); delete activeCharts['chartFinMain']; }
     _finPainelRender();
     return;
   }
-  const _finTitleEl = document.getElementById('finTitle'); if (_finTitleEl) _finTitleEl.textContent = (ind||'').replace('_',' ').replace('TTM','TTM (R$ Mi)');
-  const isPct = ['Mg EBITDA 36M','Mg Bruta 36M','Estrutura de Capital (D/D+E)','ROE','ROA','ROIC'].includes(ind);
+  document.getElementById('finTitle').textContent = ind.replace('_',' ').replace('TTM','TTM (R$ Mi)');
+  const isPct = ['Mg EBITDA 36M','Mg Bruta 36M','Mg Liquida 36M','Estrutura de Capital (D/D+E)','ROE','ROA','ROIC'].includes(ind);
   const isVal = ['Receita_TTM','EBITDA_TTM','FCF_TTM'].includes(ind);
   const datasets = empresas.map((emp, i) => {
     const d = FIN_SERIES[emp];
@@ -1738,11 +1933,6 @@ function _fundInitSel() {
 }
 
 function buildFundamentos() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-fundamentos');
-  if (_pg && !document.getElementById('fundEmpSel')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Empresas</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 22px"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:end"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Empresa</div><div style="position:relative"><svg style="position:absolute;left:10px;top:9px;width:14px;height:14px;stroke:var(--text3);fill:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="fundSearch" oninput="fundFilterList()" placeholder="Buscar empresa..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 32px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;transition:border-color .2s"></div><select id="fundEmpSel" class="custom-select" onchange="buildFundamentos()" style="width:100%;margin-top:8px"></select></div><div id="fundInfoA" style="display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Setor / Último Balanço</div><div id="fundInfoSetor" style="font-size:13px;font-weight:600;color:var(--navy)">—</div><div id="fundInfoData" style="font-size:11px;color:var(--text3)">—</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Receita TTM</div><div id="fundKpiRec" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">EBITDA TTM</div><div id="fundKpiEbt" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--teal)">—</div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Dív. Líq/EBITDA</div><div id="fundKpiDl" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div></div><div style="display:flex;flex-direction:column;gap:4px;position:relative"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Liq. Corrente</div><div style="display:flex;align-items:center;gap:8px"><div id="fundKpiLc" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div><button onclick="exportarPDFFundamentos()" title="Exportar dados da empresa como PDF" style="background:rgba(182,157,116,.15);border:1px solid rgba(182,157,116,.3);color:var(--text3);padding:5px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button></div></div></div></div><div style="margin-top:16px"><div class="glass-range-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.10em">Período</div><span id="fundDateRangeLabel" class="glass-range-label"></span></div><div style="position:relative;height:32px;padding:0 8px"><div id="fundRangeTrack" style="position:absolute;top:14px;left:8px;right:8px;height:5px;background:rgba(0,103,123,0.10);border-radius:999px"><div id="fundRangeFill" style="position:absolute;height:100%;background:linear-gradient(90deg,rgba(0,103,123,.45),var(--teal));border-radius:999px;left:0%;width:100%;transition:left .04s,width .04s"></div></div><input type="range" id="fundRangeMin" min="0" max="100" value="0" class="fin-range-inp" oninput="fundRangeUpdate(event)"><input type="range" id="fundRangeMax" min="0" max="100" value="100" class="fin-range-inp" oninput="fundRangeUpdate(event)"></div></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Resultado — Receita / EBITDA / Lucro Líquido (LTM)</div><div class="h320"><canvas id="fundChartPL"></canvas></div></div><div class="card"><div class="card-title">Margens LTM — Bruta / EBITDA / Líquida</div><div class="h320"><canvas id="fundChartMg"></canvas></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Alavancagem — Dív. Líquida/EBITDA · Dív. Bruta/EBITDA</div><div class="h320"><canvas id="fundChartLev"></canvas></div></div><div class="card"><div class="card-title">Liquidez — Corrente / Seca / Imediata</div><div class="h320"><canvas id="fundChartLiq"></canvas></div></div></div><div class="card"><div class="card-title">Fluxo de Caixa por Trimestre — FCO / FCI / FCF</div><div class="h320"><canvas id="fundChartCF"></canvas></div></div>`;
-  }
   if (!_fundIniciado) { _fundInitSel(); _fundIniciado = true; fundRangeInit(); }
   const sel  = document.getElementById('fundEmpSel');
   if (!sel || !sel.value) return;
@@ -1769,16 +1959,16 @@ function buildFundamentos() {
   const safe = arr => (arr||[]).map(v => (v == null || v !== v) ? null : v);
 
   // ── Info card ──
-  const _fIS = document.getElementById('fundInfoSetor'); if (_fIS) _fIS.textContent = d.setor || '—';
-  const _fID = document.getElementById('fundInfoData');  if (_fID) _fID.textContent  = d.datas?.length ? 'Último balanço: ' + d.datas[d.datas.length-1] : '—';
+  document.getElementById('fundInfoSetor').textContent = d.setor || '—';
+  document.getElementById('fundInfoData').textContent  = d.datas?.length ? 'Último balanço: ' + d.datas[d.datas.length-1] : '—';
   const rec  = last(d['Receita_TTM']);
   const ebt  = last(d['EBITDA_TTM']);
   const dl   = last(d['DivLiquida/EBITDA']);
   const lc   = last(d['Liquidez Corrente']);
-  const _fKR = document.getElementById('fundKpiRec'); if (_fKR) _fKR.textContent = rec != null ? 'R$ '+mi(rec)+' Mi' : '—';
-  const _fKE = document.getElementById('fundKpiEbt'); if (_fKE) _fKE.textContent = ebt != null ? 'R$ '+mi(ebt)+' Mi' : '—';
-  const _fKD = document.getElementById('fundKpiDl');  if (_fKD) _fKD.textContent  = dl  != null ? Number(dl).toFixed(1)+'x'  : '—';
-  const _fKL = document.getElementById('fundKpiLc');  if (_fKL) _fKL.textContent  = lc  != null ? Number(lc).toFixed(2)+'x'  : '—';
+  document.getElementById('fundKpiRec').textContent = rec != null ? 'R$ '+mi(rec)+' Mi' : '—';
+  document.getElementById('fundKpiEbt').textContent = ebt != null ? 'R$ '+mi(ebt)+' Mi' : '—';
+  document.getElementById('fundKpiDl').textContent  = dl  != null ? Number(dl).toFixed(1)+'x'  : '—';
+  document.getElementById('fundKpiLc').textContent  = lc  != null ? Number(lc).toFixed(2)+'x'  : '—';
 
   const LOPT = {
     type:'line',
@@ -2224,6 +2414,20 @@ function spInitSels() {
 
   spRenderAtivoList();
 }
+function formatAtivoLabel(ticker) {
+  const cart = typeof getFiltered === 'function' ? getFiltered() : [];
+  const c = ATIVOS.find(a => a.ticker === ticker) || cart.find(x => x.ticker === ticker);
+  if (!c) return ticker;
+  const parts = [ticker];
+  if (c.emissor) parts.push(c.emissor);
+  if (c.duration != null && c.duration !== '' && !isNaN(Number(c.duration))) {
+    parts.push(Number(c.duration).toFixed(1) + 'a');
+  }
+  return parts.join(' ');
+}
+function spFormatLabel(ativo) {
+  return formatAtivoLabel(ativo);
+}
 function spGetAtivosDisp() {
   const cart    = getFiltered();
   const classe  = document.getElementById('spClasseSel')?.value || '';
@@ -2247,7 +2451,8 @@ function spRenderAtivoList() {
   disponiveis.sort().forEach(a => {
     const sel = spSelecionados.has(a);
     const btn = document.createElement('button');
-    btn.textContent = a;
+    btn.textContent = spFormatLabel(a);
+    btn.title = a;
     btn.style.cssText = `padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600;transition:all .15s;border:1px solid ${sel?'var(--teal)':'var(--border)'};background:${sel?'rgba(0,103,123,.12)':'var(--surface2)'};color:${sel?'var(--teal)':'var(--text3)'};`;
     btn.onclick = () => spToggle(a);
     wrap.appendChild(btn);
@@ -2261,7 +2466,7 @@ function spToggle(a) {
 function spRenderChips() {
   const wrap = document.getElementById('spChipsWrap');
   if (!spSelecionados.size) { wrap.innerHTML = '<span style="color:var(--text3);font-size:11px">Nenhum selecionado</span>'; return; }
-  wrap.innerHTML = [...spSelecionados].map(a => `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.25);border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;color:var(--teal)">${a}<span onclick="spToggle('${a}')" style="cursor:pointer;opacity:.7;font-size:12px;line-height:1">×</span></span>`).join('');
+  wrap.innerHTML = [...spSelecionados].map(a => `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.25);border-radius:4px;padding:3px 8px;font-size:10px;font-weight:600;color:var(--teal)">${spFormatLabel(a)}<span onclick="spToggle('${a}')" style="cursor:pointer;opacity:.7;font-size:12px;line-height:1">×</span></span>`).join('');
 }
 function spAddAll()    { spGetAtivosDisp().forEach(a => spSelecionados.add(a)); spRenderAtivoList(); buildSpreads(); }
 function spRemoveAll() { spSelecionados.clear(); spRenderAtivoList(); buildSpreads(); }
@@ -2403,11 +2608,6 @@ function _bcbLookup(nome) {
 let _bancosIniciado = false;
 
 function buildBancos(preselect) {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-bancos');
-  if (_pg && !document.getElementById('bancosEmpSel')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Bancos</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 22px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Banco</div><select id="bancosEmpSel" class="custom-select" onchange="buildBancos()" style="width:100%"></select></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Basileia</div><div id="bancoKpiBasileia" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">ROE</div><div id="bancoKpiROE" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--teal)">—</div></div><div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Inadimplência</div><div style="display:flex;align-items:center;gap:8px"><div id="bancoKpiNPL" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div><button onclick="exportarPDFBancos()" title="Exportar dados do banco como PDF" style="background:rgba(182,157,116,.15);border:1px solid rgba(182,157,116,.3);color:var(--text3);padding:5px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button></div></div></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Solvência — Índice de Basileia · Tier 1 Capital</div><div class="h320"><canvas id="bancoChartBasileia"></canvas></div></div><div class="card"><div class="card-title">Rentabilidade — ROE · NIM</div><div class="h320"><canvas id="bancoChartRent"></canvas></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Qualidade de Crédito — Cobertura PDD · Desp. Provisão/Carteira</div><div class="h320"><canvas id="bancoChartCredit"></canvas></div></div><div class="card"><div class="card-title">Eficiência Operacional</div><div class="h320"><canvas id="bancoChartEfic"></canvas></div></div></div>`;
-  }
   const sel = document.getElementById('bancosEmpSel');
   if (!sel) return;
   if (!_bancosIniciado) {
@@ -2429,11 +2629,11 @@ function buildBancos(preselect) {
     const basLast = last(d.basileia);
     const roeLast = last(d.roe);
     const nplLast = last(d.inadimpl);
-    const _bkB = document.getElementById('bancoKpiBasileia'); if (_bkB) _bkB.textContent = basLast!=null ? Number(basLast).toFixed(1)+'%' : '—';
-    const _bkR = document.getElementById('bancoKpiROE');      if (_bkR) _bkR.textContent = roeLast!=null ? Number(roeLast).toFixed(1)+'%' : '—';
-    const _bkN = document.getElementById('bancoKpiNPL');      if (_bkN) _bkN.textContent = nplLast!=null ? Number(nplLast).toFixed(1)+'%' : '—';
+    document.getElementById('bancoKpiBasileia').textContent = basLast!=null ? Number(basLast).toFixed(1)+'%' : '—';
+    document.getElementById('bancoKpiROE').textContent      = roeLast!=null ? Number(roeLast).toFixed(1)+'%' : '—';
+    document.getElementById('bancoKpiNPL').textContent      = nplLast!=null ? Number(nplLast).toFixed(1)+'%' : '—';
   } else {
-    ['bancoKpiBasileia','bancoKpiROE','bancoKpiNPL'].forEach(id=>{ const _e=document.getElementById(id); if(_e) _e.textContent='N/D'; });
+    ['bancoKpiBasileia','bancoKpiROE','bancoKpiNPL'].forEach(id=>{document.getElementById(id).textContent='N/D';});
     // Sem dados BCB: limpa gráficos e exibe aviso
     ['bancoChartBasileia','bancoChartRent','bancoChartCredit','bancoChartEfic'].forEach(id=>{
       if(activeCharts[id]){activeCharts[id].destroy();delete activeCharts[id];}
@@ -2557,11 +2757,6 @@ function _renderTbodyBancosComp(){
 }
 
 function buildSpreads() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-spreads');
-  if (_pg && !document.getElementById('spAtivoList')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Spreads vs NTN-B</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start;margin-bottom:14px"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Classe</div><select class="custom-select" id="spClasseSel" onchange="spOnClasseChange()" style="width:100%"><option value="">Todas as Classes</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Setor</div><select class="custom-select" id="spSetorSel" onchange="spOnSetorChange()" style="width:100%"><option value="">Todos os Setores</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Emissor</div><select class="custom-select" id="spEmsSel" onchange="spOnEmsChange()" style="width:100%"><option value="">Todos os Emissores</option></select></div></div><div style="margin-bottom:10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:6px">Ativos selecionados</div><div id="spChipsWrap" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px;align-items:center"><span style="color:var(--text3);font-size:11px">Nenhum selecionado — use os filtros acima</span></div></div><div style="margin-top:4px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Ativos disponíveis <span id="spAtivoCount" style="color:var(--teal)"></span><button type="button" onclick="spAddAll()" style="margin-left:12px;background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.3);color:var(--teal);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">+ Adicionar todos</button><button type="button" onclick="spRemoveAll()" style="margin-left:6px;background:rgba(217,65,65,.1);border:1px solid rgba(217,65,65,.3);color:var(--red);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">× Limpar</button></div><div id="spAtivoList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:100px;overflow-y:auto"></div></div></div><div class="card"><div class="card-title">Evolução das Taxas (%)</div><div class="h320"><canvas id="chartSpTaxa"></canvas></div></div><div class="card"><div class="card-title">Evolução dos Spreads vs NTN-B (%)</div><div class="h320"><canvas id="chartSpSpread"></canvas></div></div><div class="card"><div class="card-title">Dispersão — Duration × Spread</div><div class="h320"><canvas id="chartSpScatter"></canvas></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Posição Atual — Ativos com Spread</div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div style="position:relative"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="spreadsSearch" oninput="_renderTbodySpreads()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div><label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);cursor:pointer;white-space:nowrap"><input type="checkbox" id="spSoSelecionados" onchange="_renderTbodySpreads()" style="cursor:pointer"> Só selecionados</label></div></div><div class="table-wrap"><table><thead><tr><th onclick="_spSort('ticker')" style="cursor:pointer;user-select:none;white-space:nowrap">Ativo <span id="_spsh_ticker" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('emissor')" style="cursor:pointer;user-select:none;white-space:nowrap">Emissor <span id="_spsh_emissor" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('setor')" style="cursor:pointer;user-select:none;white-space:nowrap">Setor <span id="_spsh_setor" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('taxa')" style="cursor:pointer;user-select:none;white-space:nowrap">Taxa (%) <span id="_spsh_taxa" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('spread')" style="cursor:pointer;user-select:none;white-space:nowrap">Spread (%) <span id="_spsh_spread" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_spSort('mediana')" style="cursor:pointer;user-select:none;white-space:nowrap">Mediana <span id="_spsh_mediana" style="opacity:.4">&#8597;</span></th><th>+1 MAD</th><th>−1 MAD</th><th onclick="_spSort('ntnb')" style="cursor:pointer;user-select:none;white-space:nowrap">NTN-B Ref <span id="_spsh_ntnb" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('duration')" style="cursor:pointer;user-select:none;white-space:nowrap">Duration <span id="_spsh_duration" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status <span id="_spsh_status" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodySpreads"></tbody></table></div></div>`;
-  }
   // NÃO chame spInitSels() aqui — só popula na primeira vez
   if (!spInicializado) {
     spInitSels();
@@ -2573,7 +2768,7 @@ function buildSpreads() {
     ['chartSpTaxa','chartSpSpread','chartSpScatter'].forEach(id => {
       if (activeCharts[id]) { activeCharts[id].destroy(); delete activeCharts[id]; }
     });
-    const _tbSp = document.getElementById('tbodySpreads'); if (_tbSp) _tbSp.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:40px 32px;font-size:13px">Selecione ativos usando os filtros acima</td></tr>';
+    document.getElementById('tbodySpreads').innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:40px 32px;font-size:13px">Selecione ativos usando os filtros acima</td></tr>';
     return;
   }
   const dsTaxa = ativosUsar.map((a, i) => {
@@ -2583,7 +2778,7 @@ function buildSpreads() {
       const yv = ts.valor?.[j]; if (yv==null||yv!==yv) return null;
       return { x:dt, y:yv };
     }).filter(p => p !== null);
-    return { label:a, data:dados, borderColor:COLORS[i%COLORS.length], backgroundColor:'transparent', tension:.3, pointRadius:0, borderWidth:2 };
+    return { label:spFormatLabel(a), data:dados, borderColor:COLORS[i%COLORS.length], backgroundColor:'transparent', tension:.3, pointRadius:0, borderWidth:2 };
   });
   mk('chartSpTaxa', {
     type:'line', data:{ datasets:dsTaxa },
@@ -2599,7 +2794,7 @@ function buildSpreads() {
       const yv = ts.spread?.[j]; if (yv==null||yv!==yv) return null;
       return { x:dt, y:yv };
     }).filter(p => p !== null);
-    return { label:a, data:dados, borderColor:COLORS[i%COLORS.length], backgroundColor:COLORS[i%COLORS.length]+'18', tension:.3, pointRadius:0, borderWidth:2, fill:false };
+    return { label:spFormatLabel(a), data:dados, borderColor:COLORS[i%COLORS.length], backgroundColor:COLORS[i%COLORS.length]+'18', tension:.3, pointRadius:0, borderWidth:2, fill:false };
   });
   mk('chartSpSpread', {
     type:'line', data:{ datasets:dsSpread },
@@ -2626,7 +2821,7 @@ function buildSpreads() {
   mk('chartSpScatter', {
     type:'scatter',
     data:{ datasets:[{ label:'Ativos', data:scatterPts.map(p=>({ x:p.x, y:p.y, ticker:p.ticker })), backgroundColor:scatterPts.map(p=>p.color+'cc'), pointRadius:8, pointHoverRadius:11 }] },
-    options:{ ...CHART_DEFAULTS, plugins:{ ...CHART_DEFAULTS.plugins, legend:{ display:false }, tooltip:{ callbacks:{ label: c=>`${c.raw.ticker}: dur=${c.raw.x?.toFixed(1)}a | spread=${c.raw.y?.toFixed(3)}%` } } }, scales:{ x:{ ...CHART_DEFAULTS.scales.x, title:{ display:true, text:'Duration (anos)', color:'#718096', font:{size:10} }, min:_sxMin, max:_sxMax }, y:{ ...CHART_DEFAULTS.scales.y, title:{ display:true, text:'Spread (%)', color:'#718096', font:{size:10} }, min:_syMin, max:_syMax, ticks:{ ...CHART_DEFAULTS.scales.y.ticks, callback: v=>v.toFixed(3)+'%' } } } }
+    options:{ ...CHART_DEFAULTS, plugins:{ ...CHART_DEFAULTS.plugins, legend:{ display:false }, tooltip:{ callbacks:{ label: c=>`${spFormatLabel(c.raw.ticker)}: dur=${c.raw.x?.toFixed(1)}a | spread=${c.raw.y?.toFixed(3)}%` } } }, scales:{ x:{ ...CHART_DEFAULTS.scales.x, title:{ display:true, text:'Duration (anos)', color:'#718096', font:{size:10} }, min:_sxMin, max:_sxMax }, y:{ ...CHART_DEFAULTS.scales.y, title:{ display:true, text:'Spread (%)', color:'#718096', font:{size:10} }, min:_syMin, max:_syMax, ticks:{ ...CHART_DEFAULTS.scales.y.ticks, callback: v=>v.toFixed(3)+'%' } } } }
   });
   _spCache = [...new Map(cart.filter(a => SPREADS_TS[a.ticker]).map(a => [a.ticker, a])).values()];
   _renderTbodySpreads();
@@ -2643,8 +2838,24 @@ function _spSort(col) {
 function _renderTbodySpreads() {
   const q=(document.getElementById('spreadsSearch')?.value||'').toLowerCase().trim();
   const soSel=document.getElementById('spSoSelecionados')?.checked;
+  const classeSel = document.getElementById('spClasseSel')?.value || '';
+  const setorSel  = document.getElementById('spSetorSel')?.value || '';
+  const emsSel    = document.getElementById('spEmsSel')?.value || '';
+  const cart = getFiltered();
   let src=_spCache;
+  // Aplica filtro "Só selecionados"
   if(soSel) src=src.filter(a=>spSelecionados.has(a.ticker));
+  // Aplica filtros de classe / setor / emissor (os mesmos usados pelos gráficos)
+  if(classeSel || setorSel || emsSel) {
+    src = src.filter(a => {
+      const c = cart.find(x => x.ticker === a.ticker);
+      if (!c) return false;
+      if (classeSel && c.classe !== classeSel) return false;
+      if (setorSel  && c.setor  !== setorSel)  return false;
+      if (emsSel    && c.emissor !== emsSel)   return false;
+      return true;
+    });
+  }
   if(q) src=src.filter(a=>[a.ticker,a.emissor,a.setor,a.ntnb_ref,a.Status].some(f=>f&&String(f).toLowerCase().includes(q)));
   const getV=a=>{
     const ts=SPREADS_TS[a.ticker];
@@ -2684,8 +2895,9 @@ function _renderTbodySpreads() {
   tb.innerHTML=src.map(a=>{
     const v=getV(a);
     const sc=v.spread==null?'':v.spread>(v.p1mad??Infinity)?'col-bad':v.spread<(v.m1mad??-Infinity)?'col-good':'col-warn';
+    const label = `${a.ticker||''}${a.emissor?(' '+a.emissor):''}${a.duration?(' '+Number(a.duration).toFixed(1)+'a'):''}` || '—';
     return `<tr>
-      <td style="font-weight:700;font-family:var(--mono);font-size:11px">${a.ticker||'—'}</td>
+      <td style="font-weight:700;font-family:var(--mono);font-size:11px">${label}</td>
       <td>${a.emissor||'—'}</td><td class="td-muted">${a.setor||'—'}</td>
       <td style="font-family:var(--mono)">${v.taxa!=null?Number(v.taxa).toFixed(3):'—'}</td>
       <td class="${sc}" style="font-family:var(--mono)">${v.spread!=null?Number(v.spread).toFixed(3):'—'}</td>
@@ -2714,11 +2926,6 @@ function calcDistribuicao(valores, pontos=60) {
   return { xs, ys };
 }
 function buildTunel() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-tunel');
-  if (_pg && !document.getElementById('ativoTunelSel')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Túnel de Preço</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr;gap:16px;"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Ativo</div><select id="ativoTunelSel" class="custom-select" onchange="buildTunel()" style="width:100%"></select></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Taxa (%) — Mediana ± 1 MAD + MM21</div><div class="h320"><canvas id="chartTunelTaxa"></canvas></div></div><div class="card"><div class="card-title">Distribuição Histórica — Taxa (%)</div><div class="h320"><canvas id="chartHistTunelTaxa"></canvas></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Spread (%) — Mediana ± 1 MAD + MM21</div><div class="h320"><canvas id="chartTunelSpread"></canvas></div></div><div class="card"><div class="card-title">Distribuição Histórica — Spread (%)</div><div class="h320"><canvas id="chartHistTunelSpread"></canvas></div></div></div><div class="card"><div class="card-title">Estatísticas do Ativo Selecionado</div><div class="table-wrap"><table><thead><tr><th>Ticker</th><th>Emissor</th><th>Setor</th><th>Duration</th><th>Taxa Atual (%)</th><th>Spread Atual (%)</th><th>Mediana Spread</th><th>+1 MAD</th><th>−1 MAD</th><th>Z-Score</th><th>Vol Spread</th><th>Status</th></tr></thead><tbody id="tbodyTunel"></tbody></table></div></div>`;
-  }
   const ativosCarteira = getFiltered().map(a => a.ticker);
   const ativos = Object.keys(SPREADS_TS).filter(a => ativosCarteira.includes(a));
   const sel = document.getElementById('ativoTunelSel');
@@ -2731,7 +2938,7 @@ function buildTunel() {
   if (!ativo || !SPREADS_TS[ativo]) {
     if (activeCharts['chartTunelTaxa'])   activeCharts['chartTunelTaxa'].destroy();
     if (activeCharts['chartTunelSpread']) activeCharts['chartTunelSpread'].destroy();
-    const _tbT = document.getElementById('tbodyTunel'); if (_tbT) _tbT.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:32px">Nenhum ativo disponível.</td></tr>';
+    document.getElementById('tbodyTunel').innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:32px">Nenhum ativo disponível.</td></tr>';
     return;
   }
   const ts   = SPREADS_TS[ativo];
@@ -2781,8 +2988,7 @@ function buildTunel() {
   }
   const zCls  = zscore==null?'': zscore>2?'col-bad': zscore>1?'col-warn': zscore<-1?'col-good':'';
   const scSp  = spreadAtual==null?'': spreadAtual>(p1mad??Infinity)?'col-bad': spreadAtual<(m1mad??-Infinity)?'col-good':'col-warn';
-  const _tbTunel = document.getElementById('tbodyTunel');
-  if (_tbTunel) _tbTunel.innerHTML = `<tr>
+  document.getElementById('tbodyTunel').innerHTML = `<tr>
     <td style="font-weight:600;font-size:11px">${ativo}</td>
     <td>${info.emissor||'—'}</td><td class="td-muted">${info.setor||'—'}</td>
     <td style="font-family:var(--mono)">${info.duration?Number(info.duration).toFixed(1)+'a':'—'}</td>
@@ -2833,11 +3039,6 @@ function bondRenderChips() {
 function bondAddAll()    { bondsFiltrados.forEach(b=>bondsSelecionados.add(b)); bondRenderList(); buildBonds(); }
 function bondRemoveAll() { bondsSelecionados.clear(); bondRenderList(); buildBonds(); }
 function buildBonds() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-bonds');
-  if (_pg && !document.getElementById('bondList')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Evolução — Bonds Offshore</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;align-items:start"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Buscar Ticker</div><div style="position:relative;"><svg style="position:absolute;left:10px;top:9px;width:14px;height:14px;stroke:var(--text3);fill:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="bondSearch" oninput="bondFilterList()" placeholder="Ex: RUMO..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 30px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;transition:border-color .2s;"></div><div style="margin-top:12px;display:flex;gap:6px"><button onclick="bondAddAll()" style="background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.3);color:var(--teal);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">+ Adicionar Visíveis</button><button onclick="bondRemoveAll()" style="background:rgba(217,65,65,.1);border:1px solid rgba(217,65,65,.3);color:var(--red);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">× Limpar</button></div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Bonds Selecionados <span id="bondCount" style="color:var(--teal)"></span></div><div id="bondChipsWrap" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px;align-items:center;padding-top:4px;"><span style="color:var(--text3);font-size:11px">Nenhum selecionado — use a busca</span></div></div></div><div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px"><div id="bondList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto"></div></div></div><div class="card"><div class="card-title">Curva de Preço dos Ativos (Eixo Y = Valor / Eixo X = Data)</div><div class="h320" style="height: 400px;"><canvas id="chartBondsPreco"></canvas></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Posição Atual — Bonds Offshore</div><div style="position:relative;flex-shrink:0"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="bondsSearch" oninput="_renderTbodyBonds()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div></div><div class="table-wrap"><table><thead><tr><th onclick="_bondsSort('ticker')" style="cursor:pointer;user-select:none">Ativo <span id="_bsh_ticker" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_bondsSort('emissor')" style="cursor:pointer;user-select:none">Emissor <span id="_bsh_emissor" style="opacity:.4">&#8597;</span></th><th onclick="_bondsSort('status')" style="cursor:pointer;user-select:none">Status Douro <span id="_bsh_status" style="opacity:.4">&#8597;</span></th><th onclick="_bondsSort('preco')" style="cursor:pointer;user-select:none">Preço Atual <span id="_bsh_preco" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodyBonds"></tbody></table></div></div>`;
-  }
   if (!bondsInicializado) { bondInitSels(); bondsInicializado=true; } else bondRenderList();
   const bondsPlot = [...bondsSelecionados];
   if (!bondsPlot.length) {
@@ -2976,14 +3177,7 @@ function buildRankingComparativo() {
   const allStatus=[...new Set([...Object.keys(byStCorp),...Object.keys(byStBanc)])].sort((a,b)=>{const i=statusOrd.indexOf(a),j=statusOrd.indexOf(b);return(i<0?99:i)-(j<0?99:j);});
   mk('chartCompStatus',{type:'bar',data:{labels:allStatus,datasets:[{label:'Corporativos',data:allStatus.map(s=>byStCorp[s]||0),backgroundColor:allStatus.map(s=>statusColor(s)+'aa'),borderColor:allStatus.map(s=>statusColor(s)),borderWidth:1,borderRadius:3},{label:'Bancos',data:allStatus.map(s=>byStBanc[s]||0),backgroundColor:allStatus.map(s=>statusColor(s)+'55'),borderColor:allStatus.map(s=>statusColor(s)),borderWidth:1,borderRadius:3}]},options:{...CHART_DEFAULTS,plugins:{...CHART_DEFAULTS.plugins,legend:{display:true,position:'bottom',labels:{color:'#718096',font:{size:10},boxWidth:10}}},scales:{x:{...CHART_DEFAULTS.scales.x},y:{...CHART_DEFAULTS.scales.y,ticks:{...CHART_DEFAULTS.scales.y.ticks,stepSize:1}}}}});
 }
-function buildRanking() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-ranking');
-  if (_pg && !document.getElementById('subpage-corporativo')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Ranking de Emissores</h2><div class="accent-line"></div></div><div id="subpage-corporativo"><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Corporativos — Scorecard Douro</div><div style="position:relative;flex-shrink:0"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="rankCorpSearch" oninput="_renderRankCorp()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div></div><div class="table-wrap"><table><thead><tr><th onclick="_rankCorpSort('empresa')" style="cursor:pointer;user-select:none">Empresa <span id="_rcsh_empresa" style="opacity:.4">&#8597;</span></th><th onclick="_rankCorpSort('setor')" style="cursor:pointer;user-select:none">Setor <span id="_rcsh_setor" style="opacity:.4">&#8597;</span></th><th onclick="_rankCorpSort('ratingMkt')" style="cursor:pointer;user-select:none">Rating <span id="_rcsh_ratingMkt" style="opacity:.4">&#8597;</span></th><th onclick="_rankCorpSort('ratingDouro')" style="cursor:pointer;user-select:none">Rating Douro <span id="_rcsh_ratingDouro" style="opacity:.4">&#8597;</span></th><th onclick="_rankCorpSort('status')" style="cursor:pointer;user-select:none">Status <span id="_rcsh_status" style="color:var(--teal);opacity:1">&#8595;</span></th></tr></thead><tbody id="tbodyRankCorp"></tbody></table></div></div><div class="card"><div class="card-title">Distribuição por Status — Corporativos</div><div class="h260"><canvas id="chartRankingStatus"></canvas></div></div></div><div id="subpage-bancario" style="display:none"><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Bancos — Watch List</div><div style="position:relative;flex-shrink:0"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="rankBancosSearch" oninput="_renderRankBancos()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div></div><div class="table-wrap"><table><thead><tr><th onclick="_rankBancosSort('empresa')" style="cursor:pointer;user-select:none">Banco <span id="_rbsh_empresa" style="opacity:.4">&#8597;</span></th><th onclick="_rankBancosSort('ratingDouro')" style="cursor:pointer;user-select:none">Rating Douro <span id="_rbsh_ratingDouro" style="opacity:.4">&#8597;</span></th><th onclick="_rankBancosSort('status')" style="cursor:pointer;user-select:none">Status <span id="_rbsh_status" style="color:var(--teal);opacity:1">&#8595;</span></th></tr></thead><tbody id="tbodyRankBancos"></tbody></table></div></div><div class="card"><div class="card-title">Distribuição por Rating Douro — Bancos</div><div class="h260"><canvas id="chartRankingBancosBar"></canvas></div></div></div><div id="subpage-comparativo" style="display:none"><div class="grid-2"><div class="card"><div class="card-title">Corporativos × Bancos — Rating Douro</div><div class="h260"><canvas id="chartCompRating"></canvas></div></div><div class="card"><div class="card-title">Corporativos × Bancos — Status</div><div class="h260"><canvas id="chartCompStatus"></canvas></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Corporativos — Scorecard Douro</div><div class="table-wrap"><table><thead><tr><th>Empresa</th><th>Setor</th><th>Rating</th><th>Rating Douro</th><th>Status</th></tr></thead><tbody id="tbodyCompCorp"></tbody></table></div></div><div class="card"><div class="card-title">Bancos — Watch List</div><div class="table-wrap"><table><thead><tr><th>Banco</th><th>Rating Douro</th><th>Status</th></tr></thead><tbody id="tbodyCompBancos"></tbody></table></div></div></div></div>`;
-  }
-  buildRankingCorp(); buildRankingBancos();
-}
+function buildRanking() { buildRankingCorp(); buildRankingBancos(); }
 function showRankingPage(sub, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -3000,11 +3194,6 @@ function showRankingPage(sub, el) {
 }
 // ── PERFORMANCE ───────────────────────────────────────────────────────────
 function buildPerformance() {
-  if (typeof PERF_DATA === 'undefined' || !PERF_DATA) return;
-  const _pg = document.getElementById('page-performance');
-  if (_pg && !document.getElementById('chartPerfAcum')) {
-    _pg.innerHTML = `<div class="section-header"><h2>Performance dos Ativos</h2><div class="accent-line"></div></div><div class="flex-row"><select class="custom-select" id="janelaPerf" onchange="buildPerformance()"><option value="21">21 dias</option><option value="63">63 dias</option><option value="252">252 dias</option></select></div><div class="grid-2"><div class="card"><div class="card-title">Retorno Acumulado</div><div class="h320"><canvas id="chartPerfAcum"></canvas></div></div><div class="card"><div class="card-title">Rolling Return</div><div class="h320"><canvas id="chartRolling"></canvas></div></div></div><div class="card"><div class="card-title">Matriz de Correlação</div><div class="table-wrap"><table id="corrTable"></table></div></div><div class="card"><div class="card-title">Métricas</div><div class="table-wrap"><table><thead><tr><th>Ativo</th><th>Volatilidade</th><th>DrawDown Máx.</th><th>Retorno Acum.</th></tr></thead><tbody id="tbodyPerf"></tbody></table></div></div>`;
-  }
   const ativos = Object.keys(PERF_DATA.ativos);
   const datasets = ativos.map((a,i)=>({ label:a, data:PERF_DATA.ativos[a].retorno_acum.map(v=>v*100), borderColor:COLORS[i%COLORS.length], backgroundColor:'transparent', tension:.3, pointRadius:0, borderWidth:2 }));
   mk('chartPerfAcum',{ type:'line', data:{ labels:PERF_DATA.datas, datasets }, options:{
@@ -3016,7 +3205,7 @@ function buildPerformance() {
       y:{ ...CHART_DEFAULTS.scales.y, ticks:{ ...CHART_DEFAULTS.scales.y.ticks, callback: v=>v.toFixed(1)+'%' } }
     }
   } });
-  const janela=parseInt(document.getElementById('janelaPerf')?.value || '21');
+  const janela=parseInt(document.getElementById('janelaPerf').value);
   const rollingDs = ativos.map((a,i)=>{
     const rets=PERF_DATA.ativos[a].retornos, rolling=[];
     for(let j=janela;j<rets.length;j++){ let acc=1; for(let k=j-janela;k<j;k++) acc*=(1+rets[k]); rolling.push((acc-1)*100); }
@@ -3031,7 +3220,7 @@ function buildPerformance() {
       y:{ ...CHART_DEFAULTS.scales.y, ticks:{ ...CHART_DEFAULTS.scales.y.ticks, callback: v=>v.toFixed(1)+'%' } }
     }
   } });
-  const _tbPerf = document.getElementById('tbodyPerf'); if (_tbPerf) _tbPerf.innerHTML = ativos.map(a=>{
+  document.getElementById('tbodyPerf').innerHTML = ativos.map(a=>{
     const d=PERF_DATA.ativos[a];
     return `<tr><td style="font-weight:700">${a}</td><td style="font-family:var(--mono)">${(d.vol*100).toFixed(2)}%</td><td class="${d.drawdown<-0.1?'col-bad':'col-good'}" style="font-family:var(--mono)">${(d.drawdown*100).toFixed(2)}%</td><td class="${d.ret_total>0?'col-good':'col-bad'}" style="font-family:var(--mono)">${(d.ret_total*100).toFixed(2)}%</td></tr>`;
   }).join('');
@@ -3041,15 +3230,10 @@ function buildPerformance() {
   html+='</tr></thead><tbody>';
   corr.values.forEach((row,i)=>{ html+=`<tr><td style="font-weight:700">${corr.labels[i]}</td>`; row.forEach(v=>{ html+=`<td style="font-family:var(--mono)">${v.toFixed(2)}</td>`; }); html+='</tr>'; });
   html+='</tbody>';
-  const _corrTbl = document.getElementById('corrTable'); if (_corrTbl) _corrTbl.innerHTML=html;
+  document.getElementById('corrTable').innerHTML=html;
 }
 // ── DOURO NEWS ────────────────────────────────────────────────────────────
 function buildDouroNews() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-douro-news');
-  if (_pg && !document.getElementById('newsInsight')) {
-    _pg.innerHTML = `<div class="section-header"><div style="display:flex;align-items:center;gap:14px;"><div style="width:36px;height:36px;background:linear-gradient(135deg,#b69d74,#d4b47a);border-radius:8px;display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f2839" stroke-width="2.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg></div><h2>Douro <span style="color:#b69d74">News</span></h2></div><div class="accent-line"></div></div><div class="card" style="border-left:3px solid #b69d74;background:linear-gradient(135deg,var(--surface),rgba(182,157,116,.04));padding:20px 24px;"><div id="newsInsight"><p style="color:var(--text3);font-style:italic;text-align:center;padding:12px 0;">Carregando insight...</p></div></div><div id="newsMarket" style="background:#1f2839;border-radius:10px;padding:14px 20px;display:flex;gap:32px;flex-wrap:wrap;margin:4px 0;min-height:52px;"></div><div id="newsCards"></div><div id="newsRF" style="margin-top:24px;"></div><div id="newsWeekly" style="margin-top:12px;"></div>`;
-  }
   const nd   = typeof NEWS_DATA !== 'undefined' ? NEWS_DATA : {};
   const news = nd.noticias || [];
   const ctx  = nd.ctx      || {};
@@ -3181,25 +3365,27 @@ function buildDouroNews() {
   if (wkEl2) {
     const fatos = typeof FATOS_RELEVANTES !== 'undefined' ? FATOS_RELEVANTES : [];
     if (fatos.length > 0) {
-      const top = fatos.slice(0, 6);
+      // Ordena por data_sort (YYYY-MM-DD) e mostra os 6 mais recentes no News
+      const fatos_sorted = [...fatos].sort((a,b) => (b.data_sort||'').localeCompare(a.data_sort||''));
+      const top = fatos_sorted.slice(0, 6);
       let frHtml = `<div style="margin-top:20px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <div style="width:3px;height:3px;border-radius:50%;background:#3cd28a;flex-shrink:0;"></div>
+          <div style="width:3px;height:3px;border-radius:50%;background:#00677b;flex-shrink:0;"></div>
           <span style="font-size:10px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;color:var(--text3);">Fatos Relevantes CVM</span>
           <div style="flex:1;height:1px;background:var(--border);"></div>
-          <span onclick="showPage('notificacoes',document.getElementById('navNotifItem'))" style="font-size:10px;color:#3cd28a;cursor:pointer;font-weight:600;">ver todos →</span>
+          <span onclick="showPage('notificacoes',document.getElementById('navNotifItem'))" style="font-size:10px;color:#00677b;cursor:pointer;font-weight:600;">ver todos →</span>
         </div>`;
       top.forEach(f => {
         const linkPart = f.link
-          ? `<a href="${f.link}" target="_blank" style="font-size:10px;color:#3cd28a;text-decoration:none;font-weight:600;">doc →</a>`
+          ? `<a href="${f.link}" target="_blank" style="font-size:10px;color:#00677b;text-decoration:none;font-weight:600;">doc →</a>`
           : '';
         frHtml += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#3cd28a;font-weight:700;margin-bottom:4px">${f.empresa}</div>
+            <div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#00677b;font-weight:700;margin-bottom:4px">${f.empresa}</div>
             <div style="font-size:12.5px;font-weight:500;color:var(--text);line-height:1.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.assunto}</div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">${f.data}</div>
+            <div style="font-size:10px;${f.recente?'color:#00677b;font-weight:700':' color:var(--text3)'};font-family:var(--mono);margin-bottom:4px">${f.data}</div>
             ${linkPart}
           </div>
         </div>`;
@@ -3241,12 +3427,12 @@ function _notifRenderAlertas() {
       const cnt = byJanela[j].length;
       const worst = byJanela[j][0]; // already sorted by abs variacao
       const varStr = worst ? (worst.variacao >= 0 ? `+${worst.variacao.toFixed(2)}%` : `${worst.variacao.toFixed(2)}%`) : '—';
-      const varCol = worst ? (worst.variacao > 0 ? '#d94141' : '#2fa874') : 'var(--text3)';
-      return `<div class="card" style="padding:14px 16px;border-left:3px solid #3cd28a20;">
+      const varCol = worst ? (worst.variacao > 0 ? '#d94141' : '#00677b') : 'var(--text3)';
+      return `<div class="card" style="padding:14px 16px;border-left:3px solid rgba(0,103,123,.2);">
         <div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.10em;margin-bottom:8px">Janela ${j}</div>
-        <div style="font-size:22px;font-weight:700;color:#3cd28a;font-family:var(--mono);margin-bottom:4px">${cnt}</div>
+        <div style="font-size:22px;font-weight:700;color:#00677b;font-family:var(--mono);margin-bottom:4px">${cnt}</div>
         <div style="font-size:11px;color:var(--text3);">alertas</div>
-        ${worst ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600">${worst.ticker}</span><span style="color:${varCol};font-family:var(--mono);font-weight:700">${varStr}</span></div>` : ''}
+        ${worst ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;display:flex;justify-content:space-between;align-items:center;"><span style="font-weight:600">${formatAtivoLabel(worst.ticker)}</span><span style="color:${varCol};font-family:var(--mono);font-weight:700">${varStr}</span></div>` : ''}
       </div>`;
     }).join('');
   }
@@ -3260,27 +3446,26 @@ function _notifRenderAlertas() {
     grid.innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px;">Nenhum alerta para os filtros selecionados.</div>`;
     return;
   }
-  // Badge for sidebar
+  // Badge for sidebar — hidden by design
   const badge = document.getElementById('notifBadgeNav');
-  if (badge) {
-    const total = alertas.length;
-    if (total > 0) { badge.style.display='inline-block'; badge.textContent = total > 99 ? '99+' : String(total); }
-    else badge.style.display = 'none';
-  }
+  if (badge) badge.style.display = 'none';
   grid.innerHTML = src.slice(0, 60).map(a => {
     const isUp  = a.variacao > 0;
-    const clr   = isUp ? '#d94141' : '#2fa874';
+    const clr   = isUp ? '#d94141' : '#00677b';
     const arrow = isUp ? '▲' : '▼';
     const varStr = `${isUp?'+':''}${a.variacao.toFixed(2)}%`;
     const badgeTxt = a.tipo === 'spread' ? 'SPREAD' : 'TAXA';
     const badgeJanela = a.janela.toUpperCase();
+    const _expMaxPct = raw => (raw > 0 && raw < 1) ? raw * 100 : raw;
+    const expMax = a.exposicao_maxima_rating != null ? _expMaxPct(a.exposicao_maxima_rating) : null;
     return `<div class="alerta-card ${isUp?'alerta-up':'alerta-dn'}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div>
-          <div style="font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)">${a.ticker}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono)">${formatAtivoLabel(a.ticker)}</div>
           <div style="display:flex;gap:5px;margin-top:4px">
-            <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(47,168,116,.1);color:#3cd28a;letter-spacing:.08em">${badgeTxt}</span>
+            <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(0,103,123,.1);color:#00677b;letter-spacing:.08em">${badgeTxt}</span>
             <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(113,128,150,.1);color:var(--text3);letter-spacing:.08em">${badgeJanela}</span>
+            ${a.rating_douro ? `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(182,157,116,.12);color:#b69d74;letter-spacing:.08em">${a.rating_douro}</span>` : ''}
           </div>
         </div>
         <div style="text-align:right">
@@ -3292,8 +3477,17 @@ function _notifRenderAlertas() {
         <span>Atual: <strong style="color:var(--text);font-family:var(--mono)">${a.atual.toFixed(3)}%</strong></span>
         <span>Ref: <strong style="color:var(--text);font-family:var(--mono)">${a.ref.toFixed(3)}%</strong></span>
       </div>
+      ${expMax != null ? `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:1px dashed rgba(0,0,0,.08)"><span>Lim. Exp. Rating</span><strong style="font-family:var(--mono);color:var(--text)">${expMax.toFixed(2)}%</strong></div>` : ''}
     </div>`;
   }).join('');
+}
+
+let _notifFRJanela = 0; // 0=todos, 7=últimos 7 dias, 15=últimos 15 dias, 30=último mês
+function _notifFRSetJanela(dias, btn) {
+  _notifFRJanela = dias;
+  document.querySelectorAll('.notif-janela-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  _notifRenderFR();
 }
 
 function _notifRenderFR() {
@@ -3305,73 +3499,946 @@ function _notifRenderFR() {
     (f.assunto||'').toLowerCase().includes(q) ||
     (f.denom_cvm||'').toLowerCase().includes(q)
   );
+  if (_notifFRJanela > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - _notifFRJanela);
+    const cutoffStr = cutoff.toISOString().slice(0, 10); // YYYY-MM-DD
+    src = src.filter(f => (f.data_sort || '') >= cutoffStr);
+  }
+  src = [...src].sort((a, b) => (b.data_sort || '').localeCompare(a.data_sort || ''));
+
+  const nRecentes = fatos.filter(f => f.recente).length;
   const countEl = document.getElementById('notifFRCount');
-  if (countEl) countEl.textContent = `${src.length} fato(s)`;
-  const el = document.getElementById('notifFRCards');
+  if (countEl) countEl.textContent = src.length !== fatos.length
+    ? `${src.length} de ${fatos.length} fato(s)${nRecentes > 0 ? ' · ' + nRecentes + ' nos últ. 7 dias' : ''}`
+    : `${src.length} fato(s)${nRecentes > 0 ? ' · ' + nRecentes + ' nos últ. 7 dias' : ''}`;
+
+  const el = document.getElementById('notifFRTable');
   if (!el) return;
   if (!src.length) {
-    el.innerHTML = `<div class="fr-card" style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px;">${fatos.length ? 'Nenhum resultado para a busca.' : 'Nenhum Fato Relevante encontrado para os emissores da carteira.'}</div>`;
+    el.innerHTML = `<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px;">${fatos.length ? 'Nenhum resultado para a busca.' : 'Nenhum Fato Relevante encontrado para os emissores da carteira.'}</div>`;
     return;
   }
-  el.innerHTML = src.slice(0, 80).map(f => {
+
+  // Dispatch para o design selecionado
+  if (_notifDesign === 2) { _notifRenderFRDesign2(src); return; }
+  if (_notifDesign === 3) { _notifRenderFRDesign3(src); return; }
+  if (_notifDesign === 4) { _notifRenderFRDesign4(src); return; }
+  if (_notifDesign === 5) { _notifRenderFRDesign5(src); return; }
+  if (_notifDesign === 6) { _notifRenderFRDesign6(src); return; }
+  if (_notifDesign === 7) { _notifRenderFRDesign7(src); return; }
+  if (_notifDesign === 8) { _notifRenderFRDesign8(src); return; }
+  if (_notifDesign === 9) { _notifRenderFRDesign9(src); return; }
+  if (_notifDesign === 10) { _notifRenderFRDesign10(src); return; }
+
+  // Design 1 — padrão: tabela + timeline
+  el.innerHTML = src.map((f, i) => {
+    const recBadge = f.recente
+      ? `<span style="background:linear-gradient(135deg,#1f2839,#00677b);color:#f5f5ef;font-size:8px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:.06em;margin-left:6px;vertical-align:middle;">7D</span>`
+      : '';
+    const dotColor = f.recente ? '#00677b' : 'var(--border)';
     const linkBtn = f.link
-      ? `<a href="${f.link}" target="_blank" style="font-size:11px;color:#3cd28a;text-decoration:none;font-weight:600;">Abrir documento →</a>`
-      : `<span style="font-size:11px;color:var(--text3);opacity:.5">Sem link</span>`;
-    return `<div class="fr-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div>
-          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#3cd28a;font-weight:700;margin-bottom:4px">${f.empresa}</div>
-          <div style="font-size:11px;color:var(--text3);font-style:italic">${f.denom_cvm || ''}</div>
+      ? `<a href="${f.link}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#00677b;text-decoration:none;font-weight:600;white-space:nowrap;">Abrir →</a>`
+      : `<span style="font-size:11px;color:var(--text3);opacity:.4">—</span>`;
+    const rowBg = f.recente ? 'background:rgba(0,103,123,.025);' : '';
+    const expandId = `frexp_${i}`;
+    return `<div onclick="_frToggleRow('${expandId}')" style="${rowBg}cursor:pointer;">
+      <div style="display:grid;grid-template-columns:28px 140px 1fr 100px 90px;align-items:center;border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='rgba(0,103,123,.04)'" onmouseout="this.style.background=''">
+        <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 10px 10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;"></div>
+          ${i < src.length-1 ? `<div style="width:1px;flex:1;min-height:14px;background:var(--border);margin-top:3px;"></div>` : ''}
         </div>
-        <span style="font-size:11px;color:var(--text3);white-space:nowrap;margin-left:12px;font-family:var(--mono)">${f.data}</span>
+        <div style="padding:10px 12px;font-size:11px;font-weight:700;color:#00677b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.empresa}${recBadge}</div>
+        <div style="padding:10px 12px;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.assunto}</div>
+        <div style="padding:10px 12px;font-size:11px;color:var(--text3);font-family:var(--mono);${f.recente?'color:#00677b;font-weight:700':''}">${f.data}</div>
+        <div style="padding:10px 12px;">${linkBtn}</div>
       </div>
-      <div style="font-size:13px;font-weight:500;color:var(--text);line-height:1.55;margin-bottom:12px">${f.assunto}</div>
-      <div style="display:flex;justify-content:flex-end;">${linkBtn}</div>
+      <div id="${expandId}" style="display:none;background:rgba(0,103,123,.03);border-bottom:1px solid var(--border);padding:14px 18px 14px 38px;font-size:12px;color:var(--text);line-height:1.7;animation:frSlide .18s ease;">
+        <div style="font-size:10px;color:var(--text3);font-style:italic;margin-bottom:6px;">${f.denom_cvm || ''}</div>
+        <div style="font-size:13px;font-weight:500;line-height:1.65;margin-bottom:10px;">${f.assunto}</div>
+        ${f.link ? `<a href="${f.link}" target="_blank" style="font-size:11px;color:#00677b;text-decoration:none;font-weight:600;">Abrir documento completo →</a>` : ''}
+      </div>
     </div>`;
   }).join('');
 }
 
-function buildNotificacoes() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-notificacoes');
-  if (_pg && !document.getElementById('notifAlertasGrid')) {
-    _pg.innerHTML = `<div class="section-header" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:14px;"><div style="width:36px;height:36px;background:linear-gradient(135deg,#2fa874,#3cd28a);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(47,168,116,.35);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d1f17" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div><h2 style="margin:0">Notificações <span style="color:#3cd28a">& Alertas</span></h2><div style="font-size:11px;color:var(--text3);margin-top:2px">Variações de spread/taxa · Fatos Relevantes CVM</div></div></div><div class="accent-line" style="background:linear-gradient(90deg,#2fa874,transparent);"></div></div><div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;">Janela:</span><button class="notif-janela-btn active" data-janela="all" onclick="_notifSetJanela('all',this)">Todas</button><button class="notif-janela-btn" data-janela="1d" onclick="_notifSetJanela('1d',this)">1 dia</button><button class="notif-janela-btn" data-janela="7d" onclick="_notifSetJanela('7d',this)">7 dias</button><button class="notif-janela-btn" data-janela="21d" onclick="_notifSetJanela('21d',this)">21 dias</button><span style="margin-left:12px;font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;">Tipo:</span><button class="notif-janela-btn active" data-tipo="all" onclick="_notifSetTipo('all',this)">Todos</button><button class="notif-janela-btn" data-tipo="spread" onclick="_notifSetTipo('spread',this)">Spread</button><button class="notif-janela-btn" data-tipo="taxa" onclick="_notifSetTipo('taxa',this)">Taxa</button></div><div id="notifKpiStrip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;"></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="width:3px;height:3px;border-radius:50%;background:#3cd28a;flex-shrink:0;"></div><span style="font-size:10px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;color:var(--text3);">Alertas de Spread & Taxa</span><div style="flex:1;height:1px;background:var(--border);"></div><span id="notifAlertasCount" style="font-size:10px;color:#3cd28a;font-weight:600;"></span></div><div id="notifAlertasGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:32px;"></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="width:3px;height:3px;border-radius:50%;background:#3cd28a;flex-shrink:0;"></div><span style="font-size:10px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;color:var(--text3);">Fatos Relevantes CVM — Empresas da Carteira</span><div style="flex:1;height:1px;background:var(--border);"></div><span id="notifFRCount" style="font-size:10px;color:#3cd28a;font-weight:600;"></span></div><div style="margin-bottom:12px;position:relative;max-width:320px;"><svg style="position:absolute;left:9px;top:8px;width:13px;height:13px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="notifFRSearch" oninput="_notifRenderFR()" placeholder="Filtrar empresa ou assunto..." style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px 7px 28px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:100%;transition:border-color .2s" onfocus="this.style.borderColor='#3cd28a'" onblur="this.style.borderColor='var(--border)'"></div><div id="notifFRCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;"></div>`;
+function _frToggleRow(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+}
+
+let _notifTab = 'alertas';
+
+function _notifSetTab(tab) {
+  _notifTab = tab;
+  const tabs = { fatos: 'notifTabFatos', alertas: 'notifTabAlertas', exposicao: 'notifTabExposicao' };
+  const panels = { fatos: 'notifPanelFatos', alertas: 'notifPanelAlertas', exposicao: 'notifPanelExposicao' };
+  Object.entries(tabs).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const active = k === tab;
+    el.style.borderBottomColor = active ? '#00677b' : 'transparent';
+    el.style.color = active ? '#00677b' : 'var(--text3)';
+  });
+  Object.entries(panels).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = k === tab ? '' : 'none';
+  });
+  if (tab === 'alertas') _notifRenderAlertas();
+  if (tab === 'exposicao') _notifRenderExposicao();
+  if (tab === 'fatos') _notifRenderFR();
+}
+
+function _notifRenderExposicao() {
+  const ativos = typeof ATIVOS !== 'undefined' ? ATIVOS : [];
+  const plPorCarteira = typeof PL_POR_CARTEIRA !== 'undefined' ? PL_POR_CARTEIRA : {};
+  const _expMaxPct = raw => (raw > 0 && raw < 1) ? raw * 100 : raw;
+
+  // Agregar saldo por (carteira, emissor)
+  const ceMap = {};
+  ativos.forEach(a => {
+    if (!a.emissor || !a.carteira) return;
+    const key = a.carteira + '|||' + a.emissor;
+    if (!ceMap[key]) {
+      ceMap[key] = {
+        carteira: a.carteira,
+        emissor: a.emissor,
+        saldo: 0,
+        rating_douro: a['Rating Douro'] || '—',
+        exposicao_maxima_rating: a.exposicao_maxima_rating,
+        status: a.Status || '—',
+      };
+    }
+    ceMap[key].saldo += (a.saldo || 0);
+  });
+
+  // Filtrar pares (carteira, emissor) acima do limite de exposição do respectivo PL
+  const acimaLimite = Object.values(ceMap).filter(ce => {
+    const plCart = plPorCarteira[ce.carteira] || 0;
+    if (plCart <= 0) return false;
+    const pct = ce.saldo / plCart * 100;
+    const expMax = _expMaxPct(ce.exposicao_maxima_rating || 0);
+    const isReprovado = ce.status === 'Reprovado';
+    return (expMax > 0 && pct > expMax) || (isReprovado && pct > 0);
+  });
+
+  // Ordenar pelo maior excesso relativo
+  acimaLimite.sort((a, b) => {
+    const pA = (plPorCarteira[a.carteira] || 1); const pB = (plPorCarteira[b.carteira] || 1);
+    return (b.saldo / pB) - (a.saldo / pA);
+  });
+
+  const countEl = document.getElementById('notifExpCount');
+  if (countEl) countEl.textContent = `${acimaLimite.length} alerta(s)`;
+  const badge = document.getElementById('notifBadgeExposicao');
+  if (badge) {
+    badge.style.display = acimaLimite.length ? 'inline-block' : 'none';
+    badge.textContent = acimaLimite.length;
   }
-  _notifRenderAlertas();
-  _notifRenderFR();
+  const grid = document.getElementById('notifExpGrid');
+  if (!grid) return;
+  if (!acimaLimite.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px;font-size:13px;">Nenhum emissor acima do limite de exposição por carteira.</div>';
+    return;
+  }
+  grid.innerHTML = acimaLimite.map(ce => {
+    const plCart = plPorCarteira[ce.carteira] || 0;
+    const pctEm = plCart > 0 ? (ce.saldo / plCart * 100).toFixed(2) : '—';
+    const expMax = _expMaxPct(ce.exposicao_maxima_rating || 0);
+    const excessoNum = plCart > 0 && expMax > 0 ? (ce.saldo / plCart * 100 - expMax) : null;
+    const excessoStr = excessoNum !== null ? (excessoNum >= 0 ? '+' : '') + excessoNum.toFixed(2) + '%' : '—';
+    const excessoColor = excessoNum !== null && excessoNum > 0 ? '#d94141' : '#b69d74';
+    const excessoLabel = excessoNum !== null && excessoNum <= 0 ? 'Margem' : 'Excesso';
+    const isReprovado = ce.status === 'Reprovado';
+    return `<div style="background:var(--surface);border:1px solid rgba(217,65,65,.35);border-left:3px solid #d94141;border-radius:10px;padding:16px 18px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${ce.emissor}</div>
+          <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap;">
+            <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;background:rgba(31,40,57,.12);color:var(--text3);border:1px solid var(--border);letter-spacing:.06em">${ce.carteira}</span>
+            ${isReprovado ? '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(217,65,65,.12);color:#d94141;letter-spacing:.06em;">REPROVADO</span>' : ''}
+          </div>
+        </div>
+        <span style="background:rgba(217,65,65,.12);color:#d94141;border:1px solid rgba(217,65,65,.3);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;">⚠ ACIMA DO LIMITE</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.06em;margin-bottom:3px;">% do PL Cart.</div><div style="font-size:15px;font-weight:700;color:#d94141;font-family:var(--mono)">${pctEm}%</div></div>
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.06em;margin-bottom:3px;">Limite (Rating)</div><div style="font-size:15px;font-weight:700;color:var(--text3);font-family:var(--mono)">${expMax > 0 ? expMax.toFixed(2)+'%' : '—'}</div></div>
+        <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.06em;margin-bottom:3px;">${excessoLabel}</div><div style="font-size:15px;font-weight:700;color:${excessoColor};font-family:var(--mono)">${excessoStr}</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;color:var(--text3)">Saldo: ${fmtBRL(ce.saldo)} · Rating: ${ce.rating_douro} · Status: ${ce.status}</span>
+        <button onclick="showPage('composicao',document.getElementById('navComposicaoItem'));setTimeout(()=>{document.getElementById('ativosSearch').value='${ce.emissor}'.replace(/'/g,\"\");_renderTbodyAtivos();},200)" style="font-size:10px;color:#00677b;background:none;border:1px solid rgba(0,103,123,.3);border-radius:4px;padding:3px 8px;cursor:pointer;font-weight:600;">Ver na composição →</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── DESIGN SWITCHER ───────────────────────────────────────────────────────
+let _notifDesign = 1;
+function _notifApplyDesign(val) {
+  _notifDesign = parseInt(val) || 1;
+  _notifSetTab('fatos');
+}
+
+function _notifRenderFRDesign2(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:14px;">`
+    + src.map((f,i) => {
+      const recBadge = f.recente ? `<span style="background:linear-gradient(135deg,#1f2839,#00677b);color:#f5f5ef;font-size:8px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:.06em;margin-left:6px;">7D</span>` : '';
+      const expandId = `frexp2_${i}`;
+      return `<div class="nd2-card" onclick="_frToggleRow('${expandId}')">
+        <div class="nd2-em">${f.empresa}${recBadge}</div>
+        <div class="nd2-assunto">${f.assunto}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">${f.data}</span>
+          ${f.link ? `<a href="${f.link}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#00677b;text-decoration:none;font-weight:600;">Abrir →</a>` : ''}
+        </div>
+        <div id="${expandId}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,103,123,.15);font-size:11px;color:var(--text3);font-style:italic;animation:frSlide .18s ease;">${f.denom_cvm || ''}</div>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function _notifRenderFRDesign3(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:6px 14px;">` + src.map((f,i) => {
+    const dotColor = f.recente ? '#00677b' : '#b69d74';
+    const expandId = `frexp3_${i}`;
+    return `<div class="nd3-item" onclick="_frToggleRow('${expandId}')">
+      <div class="nd3-dot" style="background:${dotColor};${f.recente ? 'box-shadow:0 0 8px rgba(0,103,123,.5)' : ''}"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+          <span style="font-size:11px;font-weight:700;color:#00677b;text-transform:uppercase;letter-spacing:.06em;">${f.empresa}</span>
+          ${f.recente ? `<span style="background:rgba(0,103,123,.12);color:#00677b;border:1px solid rgba(0,103,123,.25);border-radius:10px;padding:1px 8px;font-size:9px;font-weight:700;">NOVO</span>` : ''}
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);font-family:var(--mono)">${f.data}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.assunto}</div>
+        <div id="${expandId}" style="display:none;margin-top:8px;font-size:11px;color:var(--text3);line-height:1.6;animation:frSlide .18s ease;">
+          ${f.denom_cvm ? `<div style="font-style:italic;margin-bottom:4px;">${f.denom_cvm}</div>` : ''}
+          ${f.link ? `<a href="${f.link}" target="_blank" style="font-size:11px;color:#00677b;text-decoration:none;font-weight:600;">Abrir documento →</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function _notifRenderFRDesign4(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:8px 16px;">` + src.map(f => `
+    <div class="nd4-row">
+      <span class="nd4-em">${f.empresa}</span>
+      <span style="font-size:12px;color:var(--text);flex:1;">${f.assunto}</span>
+      ${f.link ? `<a href="${f.link}" target="_blank" style="font-size:11px;color:#00677b;text-decoration:none;font-weight:600;margin:0 8px;">↗</a>` : ''}
+      <span class="nd4-date">${f.data}</span>
+    </div>`).join('') + `</div>`;
+}
+
+function _notifRenderFRDesign5(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  const recentes  = src.filter(f => f.recente);
+  const anteriores = src.filter(f => !f.recente);
+  const colHtml = (title, color, bg, items) => `
+    <div class="nd5-col">
+      <div class="nd5-col-title" style="background:${bg};color:${color};">${title} <span style="opacity:.6">${items.length}</span></div>
+      ${items.slice(0,12).map((f,i) => {
+        const expandId = `frexp5_${title}_${i}`;
+        return `<div class="nd5-card" onclick="_frToggleRow('${expandId}')">
+          <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${f.empresa}</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${f.assunto}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono)">${f.data}</div>
+          <div id="${expandId}" style="display:none;margin-top:8px;font-size:11px;color:var(--text3);animation:frSlide .18s ease;">
+            ${f.link ? `<a href="${f.link}" target="_blank" style="color:#00677b;text-decoration:none;font-weight:600;">Abrir →</a>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  el.innerHTML = `<div style="display:flex;gap:12px;padding:12px;overflow-x:auto;">
+    ${colHtml('Últimos 7 dias','#00677b','rgba(0,103,123,.1)',recentes)}
+    ${colHtml('Anteriores','#b69d74','rgba(182,157,116,.1)',anteriores)}
+  </div>`;
+}
+
+function _notifRenderFRDesign6(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  const hero = src[0];
+  const rest = src.slice(1);
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:14px;">
+    ${hero ? `<div class="nd6-hero">
+      <div style="font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#00677b;margin-bottom:8px;">DESTAQUE</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:6px;">${hero.assunto}</div>
+      <div style="font-size:11px;color:var(--text3)">${hero.empresa} · ${hero.data}</div>
+      ${hero.link ? `<a href="${hero.link}" target="_blank" style="display:inline-block;margin-top:10px;font-size:11px;color:#00677b;text-decoration:none;font-weight:600;border:1px solid rgba(0,103,123,.3);border-radius:4px;padding:3px 10px;">Abrir →</a>` : ''}
+    </div>` : ''}
+    ${rest.map((f,i) => {
+      const expandId = `frexp6_${i}`;
+      return `<div class="nd6-card" onclick="_frToggleRow('${expandId}')">
+        <div style="font-size:10px;font-weight:700;color:#00677b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${f.empresa} ${f.recente ? '●' : ''}</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">${f.assunto}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">${f.data}</span>
+          ${f.link ? `<a href="${f.link}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#00677b;text-decoration:none;font-weight:600;">Abrir →</a>` : ''}
+        </div>
+        <div id="${expandId}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-style:italic;animation:frSlide .18s ease;">${f.denom_cvm || ''}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function _notifRenderFRDesign7(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  el.innerHTML = `<div class="nd7-wrap" style="max-height:500px;overflow-y:auto;">
+    <div style="font-size:10px;color:#2a5a40;margin-bottom:10px;border-bottom:1px solid rgba(122,255,178,.08);padding-bottom:8px;">// fatos_relevantes[${src.length}] — carteira douro capital</div>
+    ${src.map((f,i) => {
+      const expandId = `frexp7_${i}`;
+      return `<div class="nd7-line" onclick="_frToggleRow('${expandId}');event.currentTarget.style.background='rgba(122,255,178,.04)'" style="flex-direction:column;cursor:pointer;">
+        <div style="display:flex;gap:10px;align-items:baseline;">
+          <span class="nd7-ts">${f.data}</span>
+          <span class="nd7-em">${f.empresa}</span>
+          <span class="nd7-msg">${f.assunto}</span>
+          ${f.recente ? `<span class="nd7-tag">NEW</span>` : ''}
+        </div>
+        <div id="${expandId}" style="display:none;padding:6px 0 2px 60px;color:#4a8a6a;font-size:11px;animation:frSlide .18s ease;">
+          ↳ ${f.denom_cvm || f.assunto}
+          ${f.link ? ` &nbsp;<a href="${f.link}" target="_blank" style="color:#7affb2;text-decoration:none;">[link]</a>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function _notifRenderFRDesign8(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  el.innerHTML = `<div class="nd8-wrap" style="max-height:520px;overflow-y:auto;">
+    <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(0,103,123,.15),transparent 70%);border-radius:50%;pointer-events:none;"></div>
+    ${src.map((f,i) => {
+      const expandId = `frexp8_${i}`;
+      return `<div class="nd8-card" onclick="_frToggleRow('${expandId}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <span class="nd8-em">${f.empresa} ${f.recente ? '<span style="font-size:8px;vertical-align:middle;background:rgba(0,180,200,.15);border:1px solid rgba(0,180,200,.3);border-radius:3px;padding:1px 5px;margin-left:4px;">NOVO</span>' : ''}</span>
+          <span style="font-size:10px;color:rgba(200,210,220,.4);font-family:var(--mono)">${f.data}</span>
+        </div>
+        <div style="font-size:12px;color:rgba(230,235,240,.8);line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${f.assunto}</div>
+        <div id="${expandId}" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:rgba(200,210,220,.55);animation:frSlide .18s ease;">
+          ${f.denom_cvm ? `<div style="font-style:italic;margin-bottom:4px;">${f.denom_cvm}</div>` : ''}
+          ${f.link ? `<a href="${f.link}" target="_blank" style="color:rgba(0,180,200,.8);text-decoration:none;font-weight:600;font-size:11px;">Abrir documento →</a>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function _notifRenderFRDesign9(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  const colors = ['#00c8ff','#00e5a0','#b69d74','#ff6b9d','#a78bfa'];
+  el.innerHTML = `<div class="nd9-wrap" style="max-height:520px;overflow-y:auto;">
+    <div class="nd9-glow" style="top:-50px;left:-50px;"></div>
+    ${src.map((f,i) => {
+      const c = colors[i % colors.length];
+      const expandId = `frexp9_${i}`;
+      return `<div class="nd9-row" onclick="_frToggleRow('${expandId}')">
+        <div class="nd9-indicator" style="background:linear-gradient(${c},${c}44);box-shadow:0 0 6px ${c}55;"></div>
+        <span class="nd9-em" style="color:${c}">${f.empresa}</span>
+        <span class="nd9-assunto">${f.assunto}</span>
+        ${f.recente ? `<span style="background:rgba(0,200,255,.1);border:1px solid rgba(0,200,255,.25);color:#00c8ff;border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;white-space:nowrap;">NOVO</span>` : ''}
+        ${f.link ? `<a href="${f.link}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:${c};text-decoration:none;font-weight:600;white-space:nowrap;">↗</a>` : ''}
+        <span class="nd9-date">${f.data}</span>
+      </div>
+      <div id="${expandId}" style="display:none;padding:8px 8px 8px 23px;font-size:11px;color:rgba(200,210,220,.55);background:rgba(0,200,255,.03);animation:frSlide .18s ease;">
+        ${f.denom_cvm || f.assunto}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function _notifRenderFRDesign10(src) {
+  const el = document.getElementById('notifFRTable');
+  if (!el) return;
+  // Orbital: mostra até 14 nós em órbitas, resto em lista
+  const orbNos = src.slice(0, 14);
+  const rest   = src.slice(14);
+  const W = 560, H = 480, cx = W/2, cy = H/2;
+  const rings = [
+    { r: 90,  items: orbNos.slice(0, 4),  color: '#d94141' },
+    { r: 165, items: orbNos.slice(4, 9),  color: '#b69d74' },
+    { r: 230, items: orbNos.slice(9, 14), color: '#00677b' },
+  ];
+  let nodesHtml = '';
+  rings.forEach(ring => {
+    ring.items.forEach((f, idx) => {
+      const angle = (2 * Math.PI / ring.items.length) * idx - Math.PI/2;
+      const x = cx + ring.r * Math.cos(angle);
+      const y = cy + ring.r * Math.sin(angle);
+      const initials = (f.empresa || '?').slice(0,3).toUpperCase();
+      nodesHtml += `<div class="nd10-node" style="left:${x}px;top:${y}px;">
+        <div class="nd10-node-dot" style="background:linear-gradient(135deg,${ring.color}44,${ring.color}22);border:2px solid ${ring.color};color:${ring.color};box-shadow:0 0 ${f.recente?'14px':'6px'} ${ring.color}55;">${initials}</div>
+        <div class="nd10-tooltip">
+          <div style="font-size:10px;font-weight:700;color:${ring.color};letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;">${f.empresa}</div>
+          <div style="font-size:11px;color:#c8d0dc;line-height:1.5;margin-bottom:4px;">${f.assunto.slice(0,80)}${f.assunto.length>80?'…':''}</div>
+          <div style="font-size:10px;color:rgba(200,210,220,.5)">${f.data}</div>
+          ${f.link ? `<a href="${f.link}" target="_blank" style="font-size:11px;color:${ring.color};text-decoration:none;font-weight:600;display:block;margin-top:4px;">Abrir →</a>` : ''}
+        </div>
+      </div>`;
+    });
+  });
+  const ringsHtml = rings.map(ring =>
+    `<div class="nd10-ring" style="width:${ring.r*2}px;height:${ring.r*2}px;border-color:${ring.color}22;"></div>`
+  ).join('');
+  const listHtml = rest.length ? `<div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:center;padding:8px 0 4px;">
+    + ${rest.length} fatos adicionais &nbsp;<button onclick="this.closest('.nd10-list').querySelector('.nd10-rest').style.display='block';this.remove()" style="font-size:11px;color:#00677b;background:none;border:none;cursor:pointer;font-weight:600;">Ver todos</button>
+    <div class="nd10-rest" style="display:none;margin-top:8px;text-align:left;">
+      ${rest.map(f => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text);">
+        <span style="font-size:10px;font-weight:700;color:#00677b;text-transform:uppercase;margin-right:8px;">${f.empresa}</span>${f.assunto}
+        <span style="font-size:10px;color:var(--text3);margin-left:8px;font-family:var(--mono)">${f.data}</span>
+      </div>`).join('')}
+    </div>
+  </div>` : '';
+  el.innerHTML = `<div style="padding:14px;">
+    <div class="nd10-wrap" style="height:${H}px;width:${W}px;max-width:100%;margin:0 auto;">
+      ${ringsHtml}
+      <div class="nd10-center">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.08em;color:#f5f5ef;text-transform:uppercase;line-height:1.3;text-align:center;">Fatos<br>Relevantes</div>
+        <div style="font-size:16px;font-weight:800;color:#b69d74;margin-top:2px;">${src.length}</div>
+      </div>
+      ${nodesHtml}
+    </div>
+    <div class="nd10-list">${listHtml}</div>
+  </div>`;
+}
+
+function _notifBuildBriefing() {
+  const fatos   = typeof FATOS_RELEVANTES !== 'undefined' ? FATOS_RELEVANTES : [];
+  const alertas = typeof ALERTAS_NOTIF    !== 'undefined' ? ALERTAS_NOTIF    : [];
+  const ativos  = typeof ATIVOS           !== 'undefined' ? ATIVOS           : [];
+
+  const nFR       = fatos.length;
+  const nRecentes = fatos.filter(f => f.recente).length;
+  const nAlertas  = alertas.length;
+  const nCrit1d   = alertas.filter(a => a.janela === '1d').length;
+  const nExp      = ativos.filter(a => a.acima_exposicao_maxima).length;
+
+  const partes = [];
+  if (nRecentes > 0) partes.push(`<strong>${nRecentes} fato(s) relevante(s)</strong> publicado(s) nos últimos 7 dias`);
+  else if (nFR > 0)  partes.push(`<strong>${nFR} fato(s) relevante(s)</strong> disponíveis para os emissores da carteira`);
+  else               partes.push(`<strong>Nenhum fato relevante</strong> encontrado para os emissores da carteira`);
+
+  if (nAlertas > 0) {
+    partes.push(`<strong>${nAlertas} alerta(s) de spread/taxa</strong>${nCrit1d > 0 ? ` (${nCrit1d} no último dia)` : ''}`);
+  } else {
+    partes.push(`<strong>nenhum alerta</strong> de spread/taxa no momento`);
+  }
+
+  if (nExp > 0) {
+    partes.push(`<strong style="color:#d94141">${nExp} emissor(es) acima do limite de exposição</strong> — ação recomendada`);
+  } else {
+    partes.push(`<strong>nenhum emissor</strong> acima do limite de exposição`);
+  }
+
+  const el = document.getElementById('notifBriefingText');
+  if (el) el.innerHTML = partes.join(' · ') + '.';
+}
+
+function buildNotificacoes() {
+  _notifSetTab('alertas');
+  _notifBuildBriefing();
+  // Count badges
+  const ativos = typeof ATIVOS !== 'undefined' ? ATIVOS : [];
+  const nExp = ativos.filter(a => a.acima_exposicao_maxima).length;
+  const badgeExp = document.getElementById('notifBadgeExposicao');
+  if (badgeExp) { badgeExp.style.display = nExp ? 'inline-block' : 'none'; badgeExp.textContent = nExp; }
+  const alertas = typeof ALERTAS_NOTIF !== 'undefined' ? ALERTAS_NOTIF : [];
+  const badgeAl = document.getElementById('notifBadgeAlertas');
+  if (badgeAl) { badgeAl.style.display = alertas.length ? 'inline-block' : 'none'; badgeAl.textContent = alertas.length; }
 }
 
 // ── SCORECARD ─────────────────────────────────────────────────────────────
 function buildScorecard() {
-  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
-  const _pg = document.getElementById('page-scorecard');
-  if (_pg && !document.getElementById('scorecardFrame')) {
-    _pg.innerHTML = `<iframe id="scorecardFrame" src="" style="width:100%;height:100%;border:none;display:block;" allowfullscreen></iframe>`;
-  }
   const frame = document.getElementById('scorecardFrame');
   if (!frame) return;
   // Só carrega o src na primeira vez que a página é aberta
   // Nas visitas seguintes o iframe já está carregado — não recarrega
-  const _showScorecardFallback = () => {
-    frame.srcdoc = '<html><body style="font-family:Montserrat,sans-serif;display:flex;'
-      + 'align-items:center;justify-content:center;height:100vh;margin:0;'
-      + 'background:#f4f5f0;color:#718096;flex-direction:column;gap:12px">'
-      + '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dde0d8" stroke-width="1.5">'
-      + '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
-      + '<p style="font-size:13px;font-weight:500">scorecard.html não encontrado.</p>'
-      + '<p style="font-size:11px;opacity:.6">Execute gerar_scorecard.py e faça git push.</p>'
-      + '</body></html>';
-  };
   if (!frame.src || frame.src === window.location.href || frame.src === 'about:blank') {
     if (SCORECARD_SRC && SCORECARD_SRC !== 'null') {
-      fetch(SCORECARD_SRC, { method: 'HEAD' })
-        .then(r => { if (r.ok) { frame.src = SCORECARD_SRC; } else { _showScorecardFallback(); } })
-        .catch(() => _showScorecardFallback());
+      frame.src = SCORECARD_SRC;
     } else {
-      _showScorecardFallback();
+      // Fallback: scorecard não encontrado — exibir mensagem dentro do iframe
+      frame.srcdoc = '<html><body style="font-family:Montserrat,sans-serif;display:flex;'
+        + 'align-items:center;justify-content:center;height:100vh;margin:0;'
+        + 'background:#f4f5f0;color:#718096;flex-direction:column;gap:12px">'
+        + '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dde0d8" stroke-width="1.5">'
+        + '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
+        + '<p style="font-size:13px;font-weight:500">scorecard.html não encontrado.</p>'
+        + '<p style="font-size:11px;opacity:.6">Execute gerar_scorecard.py primeiro.</p>'
+        + '</body></html>';
     }
   }
 }
+// ══════════════════════════════════════════════════════════════════════════
+// COMPRAS E VENDAS
+// ══════════════════════════════════════════════════════════════════════════
+let _cvFilOp  = 'todos';
+let _cvSortKey = 'data_operacao';
+let _cvSortAsc = false;
+let _cvSelAtivos = new Set();
+let _cvSelAtivoDates = new Map();   // ativo → timestamp da data_operacao clicada
+let _cvChart = null;
+let _cvCarteiraSel = new Set();
+
+function _opNorm(op) {
+  const u = (op || '').toString().trim().toUpperCase();
+  if (u === 'C' || u === 'COMPRA' || u.startsWith('COMPR')) return 'C';
+  if (u === 'V' || u === 'VENDA'  || u.startsWith('VEND'))  return 'V';
+  return u || null;
+}
+
+function _parseCvDate(v) {
+  if (!v || v === 'None' || v === '—') return -Infinity;
+  const s = String(v).trim();
+  const p = s.split('/');
+  if (p.length === 3) return new Date(+p[2], +p[1]-1, +p[0]).getTime();
+  const d = new Date(s);
+  return isNaN(d) ? -Infinity : d.getTime();
+}
+
+function _cvFmt(v) {
+  if (v == null || v === '' || v === 'None') return '—';
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function _cvFmtQtd(v) {
+  if (v == null || v === '' || v === 'None') return '—';
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:4});
+}
+
+function _cvFiltered() {
+  const search   = (document.getElementById('cvSearch')      || {}).value || '';
+  const tipo     = (document.getElementById('cvTipoAtivoSel')|| {}).value || '';
+  const dtIni    = (document.getElementById('cvDtIni')       || {}).value || '';
+  const dtFim    = (document.getElementById('cvDtFim')       || {}).value || '';
+  return (COMPRAS_VENDAS || []).filter(r => {
+    if (_cvFilOp !== 'todos' && _opNorm(r.operacao) !== _cvFilOp.toUpperCase()) return false;
+    if (tipo && !(r.tipo_ativo || '').toLowerCase().includes(tipo.toLowerCase())) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!(r.ativo || '').toLowerCase().includes(q) &&
+          !(r.nome_portfolio || '').toLowerCase().includes(q)) return false;
+    }
+    if (dtIni || dtFim) {
+      const raw = r.data_operacao || '';
+      let dt = null;
+      if (raw.includes('/')) {
+        const p = raw.split('/');
+        dt = new Date(+p[2], +p[1]-1, +p[0]);
+      } else {
+        dt = new Date(raw);
+      }
+      if (!isNaN(dt)) {
+        if (dtIni && dt < new Date(dtIni)) return false;
+        if (dtFim && dt > new Date(dtFim)) return false;
+      }
+    }
+    return true;
+  });
+}
+
+function _cvRender() {
+  const rows   = _cvFiltered();
+  const _DATE_COLS = ['data_operacao','data_liquidacao','data_cadastro'];
+  const sorted = [...rows].sort((a, b) => {
+    const va = a[_cvSortKey], vb = b[_cvSortKey];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    let cmp;
+    if (_DATE_COLS.includes(_cvSortKey)) {
+      cmp = _parseCvDate(va) - _parseCvDate(vb);
+    } else {
+      const na = parseFloat(va), nb = parseFloat(vb);
+      cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : String(va).localeCompare(String(vb), 'pt-BR');
+    }
+    return _cvSortAsc ? cmp : -cmp;
+  });
+
+  // KPI
+  let totC = 0, totV = 0, nOp = rows.length;
+  rows.forEach(r => {
+    const v = parseFloat(r.total_bruto) || 0;
+    if (_opNorm(r.operacao) === 'C') totC += v;
+    else if (_opNorm(r.operacao) === 'V') totV += v;
+  });
+  const saldo = totC - totV;
+  const kpiEl = document.getElementById('cvKpiStrip');
+  if (kpiEl) {
+    const fmt = v => 'R$ ' + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+    kpiEl.innerHTML = [
+      ['Total Comprado', fmt(totC), '#2fa874'],
+      ['Total Vendido',  fmt(totV), '#d94141'],
+      ['Saldo Líquido',  (saldo >= 0 ? '' : '–') + fmt(saldo), saldo >= 0 ? '#2fa874' : '#d94141'],
+      ['Nº Operações',   nOp, 'var(--teal)'],
+    ].map(([l,v,c]) => `<div class="card" style="padding:14px 18px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:6px">${l}</div>
+      <div style="font-size:20px;font-weight:700;color:${c}">${v}</div>
+    </div>`).join('');
+  }
+
+  const cnt = document.getElementById('cvCount');
+  if (cnt) cnt.textContent = nOp + ' operaç' + (nOp === 1 ? 'ão' : 'ões');
+
+  const tbody = document.getElementById('tbodyCv');
+  if (!tbody) { _cvUpdateChart(); return; }
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--text3);padding:24px">Nenhuma operação encontrada.</td></tr>';
+    _cvUpdateChart();
+    return;
+  }
+
+  const opColor = op => _opNorm(op) === 'C' ? '#2fa874' : _opNorm(op) === 'V' ? '#d94141' : '#718096';
+  const opLabel = op => _opNorm(op) === 'C' ? 'Compra' : _opNorm(op) === 'V' ? 'Venda' : (op || '—');
+
+  // Render helper: converte uma linha em HTML
+  function _cvRowHtml(r) {
+    const isSelected = _cvSelAtivos.has(r.ativo);
+    const pctEm   = r.pct_emissor_carteira  != null ? parseFloat(r.pct_emissor_carteira)  : null;
+    const excesso = r.excesso_limite_pct    != null ? parseFloat(r.excesso_limite_pct)    : null;
+    const expMax  = r.exposicao_maxima_rating != null ? parseFloat(r.exposicao_maxima_rating) : null;
+    const pctStr  = pctEm != null ? pctEm.toFixed(2) + '%' : '—';
+    const pctColor = (pctEm != null && expMax != null) ? (pctEm > expMax ? '#d94141' : '#2fa874') : 'var(--text3)';
+    let excStr = '—', excColor = 'var(--text3)', excBg = 'transparent';
+    if (excesso != null) {
+      excStr   = (excesso >= 0 ? '+' : '') + excesso.toFixed(2) + '%';
+      excColor = excesso > 0 ? '#d94141' : '#2fa874';
+      excBg    = excesso > 0 ? 'rgba(217,65,65,.08)' : 'rgba(47,168,116,.08)';
+    }
+    return `<tr style="cursor:pointer;${isSelected ? 'background:rgba(0,103,123,.08);' : ''}" onclick="_cvToggleAtivo('${(r.ativo||'').replace(/'/g,"\'")}','${(r.data_operacao||'').replace(/'/g,"\'")}')" title="Clique para ver evolução de PU">
+      <td style="white-space:nowrap">${r.data_operacao||'—'}</td>
+      <td style="font-weight:600;color:var(--teal)">${r.ativo||'—'}</td>
+      <td style="font-size:10px;background:var(--surface2);border-radius:4px;padding:2px 6px;white-space:nowrap">${(r.tipo_ativo||'—').toUpperCase()}</td>
+      <td><span style="background:${opColor(r.operacao)}22;color:${opColor(r.operacao)};border:1px solid ${opColor(r.operacao)}44;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700">${opLabel(r.operacao)}</span></td>
+      <td style="text-align:right">${_cvFmtQtd(r.quantidade)}</td>
+      <td style="text-align:right">${_cvFmt(r.preco_unitario)}</td>
+      <td style="text-align:right;font-weight:600">${_cvFmt(r.total_bruto)}</td>
+      <td style="white-space:nowrap;color:var(--text3)">${r.data_liquidacao||'—'}</td>
+      <td style="font-size:10px;color:var(--text3)">${r.nome_portfolio||'—'}</td>
+      <td style="font-size:10px;font-weight:700;color:var(--teal)">${r['Rating Douro']||'—'}</td>
+      <td style="text-align:right;font-size:11px;color:var(--text3)">${expMax != null ? expMax.toFixed(2)+'%' : '—'}</td>
+      <td style="text-align:right;font-size:11px;font-weight:600;color:${pctColor}">${pctStr}</td>
+      <td style="text-align:right;font-size:11px;font-weight:700;color:${excColor};background:${excBg};border-radius:4px;padding:2px 6px;">${excStr}</td>
+    </tr>`;
+  }
+
+  // Paginação: renderiza as primeiras _CV_PAGE_SIZE linhas imediatamente,
+  // as restantes são injetadas logo após via rAF para não bloquear o UI.
+  const _CV_PAGE_SIZE = 60;
+  const firstBatch  = sorted.slice(0, _CV_PAGE_SIZE);
+  const restBatch   = sorted.slice(_CV_PAGE_SIZE);
+
+  tbody.innerHTML = firstBatch.map(_cvRowHtml).join('');
+
+  if (restBatch.length) {
+    // Injeta o resto em dois micro-tasks para liberar o thread principal
+    requestAnimationFrame(() => {
+      const frag = document.createDocumentFragment();
+      restBatch.forEach(r => {
+        const tmp = document.createElement('template');
+        tmp.innerHTML = _cvRowHtml(r);
+        frag.appendChild(tmp.content);
+      });
+      tbody.appendChild(frag);
+      _cvUpdateChart();
+    });
+  } else {
+    _cvUpdateChart();
+  }
+}
+
+function _cvSort(key) {
+  if (_cvSortKey === key) {
+    _cvSortAsc = !_cvSortAsc;
+  } else {
+    _cvSortKey = key;
+    _cvSortAsc = false;
+  }
+  document.querySelectorAll('[id^="_cvsh_"]').forEach(el => {
+    el.style.opacity = '.4'; el.innerHTML = '&#8597;';
+  });
+  const hdr = document.getElementById('_cvsh_' + key);
+  if (hdr) { hdr.style.opacity = '1'; hdr.innerHTML = _cvSortAsc ? '&#8593;' : '&#8595;'; }
+  _cvRender();
+}
+
+function _cvSetFil(val, el) {
+  _cvFilOp = val;
+  document.querySelectorAll('.cv-fil-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  _cvRender();
+}
+
+function _cvResetFil() {
+  _cvFilOp = 'todos';
+  document.querySelectorAll('.cv-fil-btn').forEach(b => b.classList.remove('active'));
+  const allBtn = document.querySelector('.cv-fil-btn[data-cv-fil="todos"]');
+  if (allBtn) allBtn.classList.add('active');
+  const sel = document.getElementById('cvTipoAtivoSel');
+  if (sel) sel.value = '';
+  const srch = document.getElementById('cvSearch');
+  if (srch) srch.value = '';
+  const dtIni = document.getElementById('cvDtIni');
+  if (dtIni) dtIni.value = '';
+  const dtFim = document.getElementById('cvDtFim');
+  if (dtFim) dtFim.value = '';
+  _cvSelAtivos.clear();
+  _cvSelAtivoDates.clear();
+  _cvRender();
+}
+
+function _cvToggleAtivo(ativo, dateStr) {
+  if (!ativo || ativo === 'None') return;
+  if (_cvSelAtivos.has(ativo)) {
+    _cvSelAtivos.delete(ativo);
+    _cvSelAtivoDates.delete(ativo);
+  } else {
+    _cvSelAtivos.add(ativo);
+    if (dateStr) _cvSelAtivoDates.set(ativo, _parseCvDate(dateStr));
+  }
+  // Re-render table highlighting, then update chart
+  _cvRender();
+  // Scroll to chart so user sees it
+  requestAnimationFrame(() => {
+    const chartCard = document.getElementById('chartCvPU');
+    if (chartCard) chartCard.closest('.card')?.scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+}
+
+// Resolve ativo key against RETORNO_DIARIO_TS, tolerating CETIP_ prefix differences
+function _cvFindTs(ativo) {
+  const map = RETORNO_DIARIO_TS || {};
+  if (map[ativo]) return map[ativo];
+  // try with CETIP_ prefix
+  const withPrefix = 'CETIP_' + ativo;
+  if (map[withPrefix]) return map[withPrefix];
+  // try stripping CETIP_ prefix from ativo
+  const stripped = ativo.replace(/^CETIP_/i, '');
+  if (map[stripped]) return map[stripped];
+  // fuzzy: find first key that contains the ativo string or vice-versa
+  const lc = ativo.toLowerCase();
+  const match = Object.keys(map).find(k => k.toLowerCase().includes(lc) || lc.includes(k.toLowerCase().replace(/^cetip_/,'').replace(/\.pu_.+$/,'')));
+  return match ? map[match] : null;
+}
+
+function _cvUpdateChart() {
+  const chips = document.getElementById('cvChartChips');
+  if (chips) {
+    chips.innerHTML = [..._cvSelAtivos].map(p =>
+      `<span onclick="_cvToggleAtivo('${p.replace(/'/g,"\'")}');event.stopPropagation()"
+        style="background:rgba(0,103,123,.15);border:1px solid rgba(0,103,123,.35);color:var(--teal);
+               border-radius:20px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;
+               display:inline-flex;align-items:center;gap:5px;">
+        ${p} <span style="opacity:.6;font-size:11px">×</span>
+      </span>`
+    ).join('');
+  }
+
+  const canvas = document.getElementById('chartCvPU');
+  if (!canvas) return;
+
+  const datasets = [];
+  let colorIdx = 0;
+
+  // ── Ativos selecionados na tabela ──────────────────────────────────────
+  [..._cvSelAtivos].forEach((ativo) => {
+    const ts = _cvFindTs(ativo);
+    if (!ts || !ts.datas || ts.datas.length < 2) return;
+
+    const startTs = _cvSelAtivoDates.has(ativo) ? _cvSelAtivoDates.get(ativo) : -Infinity;
+
+    // Primeiro índice cujo dia >= data da operação
+    let startIdx = 0;
+    if (startTs > -Infinity) {
+      for (let i = 0; i < ts.datas.length; i++) {
+        if (new Date(ts.datas[i]).getTime() >= startTs) { startIdx = i; break; }
+      }
+    }
+
+    // Retorno acumulado a partir de startIdx (retornos diários discretos)
+    let cumprod = 1.0;
+    const data = ts.datas.slice(startIdx).map((d, i) => {
+      const r = ts.valor[startIdx + i];
+      if (r != null && !isNaN(r)) cumprod *= (1 + r);
+      return { x: d, y: +((cumprod - 1) * 100).toFixed(4) };
+    });
+
+    datasets.push({
+      label: ativo,
+      data,
+      borderColor: COLORS[colorIdx % COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0.2,
+    });
+    colorIdx++;
+  });
+
+  // ── Data de início = mínimo entre os ativos selecionados ───────────────
+  const _chartStartTs = _cvSelAtivoDates.size
+    ? Math.min(..._cvSelAtivoDates.values())
+    : -Infinity;
+
+  // ── Séries comparadoras (PERF_DATA) ────────────────────────────────────
+  [..._cvCarteiraSel].forEach((serie) => {
+    const pd = (PERF_DATA?.ativos || {})[serie];
+    if (!pd || !pd.datas || !pd.retorno_acum) return;
+
+    // Primeiro índice >= _chartStartTs (busca o próximo dia disponível)
+    let startIdx = 0;
+    if (_chartStartTs > -Infinity) {
+      startIdx = pd.datas.length - 1;           // fallback: último ponto
+      for (let i = 0; i < pd.datas.length; i++) {
+        if (new Date(pd.datas[i]).getTime() >= _chartStartTs) {
+          startIdx = i;
+          break;
+        }
+      }
+    }
+
+    // Rebasa o retorno acumulado: (1 + rv) / (1 + base) - 1
+    const baseRetVal = pd.retorno_acum[startIdx] ?? 0;
+    const data = pd.datas.slice(startIdx).map((d, i) => {
+      const rv = pd.retorno_acum[startIdx + i];
+      return { x: d, y: +(((1 + rv) / (1 + baseRetVal) - 1) * 100).toFixed(4) };
+    });
+
+    datasets.push({
+      label: serie + ' (carteira)',
+      data,
+      borderColor: COLORS[colorIdx % COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 0,
+      tension: 0.2,
+    });
+    colorIdx++;
+  });
+
+  // ── Renderiza ──────────────────────────────────────────────────────────
+  if (_cvChart) { try { _cvChart.destroy(); } catch(e){} _cvChart = null; }
+
+  if (!datasets.length) {
+    canvas.parentElement.style.display = 'none';
+    return;
+  }
+  canvas.parentElement.style.display = '';
+
+  _cvChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { datasets },
+    options: {
+      ...(_CROSSHAIR_OPTS || {}),
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'month', tooltipFormat: 'dd/MM/yyyy', displayFormats: { month: 'MMM yy' } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: 'var(--text3)', maxTicksLimit: 14, font: { size: 10 } },
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,.04)' },
+          ticks: { color: 'var(--text3)', font: { size: 10 },
+            callback: v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%' },
+        },
+      },
+      plugins: {
+        annotation: {
+          annotations: {
+            zeroLine: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(255,255,255,.18)', borderWidth: 1, borderDash: [4,4] }
+          }
+        },
+        legend: { position: 'top', labels: { color: 'var(--text)', font: { size: 10 }, boxWidth: 10 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ' + ctx.dataset.label + ': ' + (ctx.parsed.y >= 0 ? '+' : '') + (ctx.parsed.y || 0).toFixed(2) + '%',
+          },
+        },
+      },
+    },
+  });
+}
+
+function _cvAddCarteira() {
+  const sel = document.getElementById('cvCarteiraComparSel');
+  if (!sel || !sel.value) return;
+  _cvCarteiraSel.add(sel.value);
+  sel.value = '';
+  _cvRenderCarteiraChips();
+  _cvUpdateChart();
+}
+
+function _cvRemoveCarteira(serie) {
+  _cvCarteiraSel.delete(serie);
+  _cvRenderCarteiraChips();
+  _cvUpdateChart();
+}
+
+function _cvRenderCarteiraChips() {
+  const wrap = document.getElementById('cvCarteiraChips');
+  if (!wrap) return;
+  wrap.innerHTML = [..._cvCarteiraSel].map(s =>
+    `<span onclick="_cvRemoveCarteira('${s.replace(/'/g,"\'")}');event.stopPropagation()"
+      style="background:rgba(182,157,116,.15);border:1px solid rgba(182,157,116,.4);color:#b69d74;
+             border-radius:20px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;
+             display:inline-flex;align-items:center;gap:5px;">
+      ${s} <span style="opacity:.6;font-size:11px">×</span>
+    </span>`
+  ).join('');
+}
+
+let _cvDebounceTimer = null;
+function _cvDebounceRender() {
+  clearTimeout(_cvDebounceTimer);
+  _cvDebounceTimer = setTimeout(_cvRender, 220);
+}
+
+function _cvPopulateCarteiraCompar() {
+  const sel = document.getElementById('cvCarteiraComparSel');
+  if (!sel || sel.children.length > 1) return;
+  const ativos = Object.keys(PERF_DATA?.ativos || {});
+  ativos.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a; opt.textContent = a;
+    sel.appendChild(opt);
+  });
+}
+
+let _cvBuilt = false;
+function buildComprasVendas() {
+  _cvPopulateCarteiraCompar();
+  if (!_cvBuilt) {
+    _cvBuilt = true;
+    const dtIni = document.getElementById('cvDtIni');
+    if (dtIni && !dtIni.value) {
+      const d = new Date();
+      d.setDate(d.getDate() - 90);
+      dtIni.value = d.toISOString().slice(0, 10);
+    }
+  }
+  _cvRender();
+}
+
 // ── DOURADO CHATBOT ───────────────────────────────────────────────────────
 let douradoOpen = false;
 function douradoToggle() {
@@ -3391,8 +4458,8 @@ function _renderMd(raw) {
     .replace(/^## (.+)$/gm,'<div style="margin:12px 0 4px;color:#d4b47a;font-size:13px;font-weight:700">$1</div>')
     .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#e8d5b0">$1</strong>')
     .replace(/\*(.+?)\*/g,'<em style="color:#a0b4c8">$1</em>')
-    .replace(/\x60([^\x60]+)\x60/g,'<code style="background:#0d1117;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px;color:#7dd3fc">$1</code>');
-  const lines = t.split(/\\n/);
+    .replace(/`([^`]+)`/g,'<code style="background:#0d1117;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px;color:#7dd3fc">$1</code>');
+  const lines = t.split(/\n/);
   const out = [];
   let inList = false;
   for (const line of lines) {
@@ -3517,7 +4584,7 @@ function _simRatio(a, b) {
 
 function _ww(tok, norm) {
   // whole-word check: tok must appear as a standalone word in norm (not as a substring)
-  return new RegExp('(?:^|[\\\\s\\\\-\\\\/,])' + tok.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&') + '(?=[\\\\s\\\\-\\\\/,]|$)').test(norm);
+  return new RegExp('(?:^|[\\s\\-\\/,])' + tok.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(?=[\\s\\-\\/,]|$)').test(norm);
 }
 
 function _extractEmissorMulti(norm) {
@@ -3588,7 +4655,7 @@ function _extractEmissor(norm) {
 // Para cada emissor da carteira, gera automaticamente frases para cada intent.
 // Isso garante cobertura total sem precisar hardcodar cada nome.
 function _buildEmissorPhrases() {
-  const emissores = (typeof ATIVOS !== 'undefined' && Array.isArray(ATIVOS)) ? [...new Set(ATIVOS.map(a=>a.emissor).filter(Boolean))] : [];
+  const emissores = [...new Set(ATIVOS.map(a=>a.emissor).filter(Boolean))];
   const n = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 
   const sintese_kw   = [], sintese_ex   = [];
@@ -3905,7 +4972,7 @@ function _matchIntent(norm) {
 }
 
 const _FALLBACKS=[
-  'Posso ajudar com:\\n- **Análise completa** de emissor (ex: "análise completa da Klabin")\\n- **Evolução temporal** (ex: "como evoluiu o EBITDA da Suzano?")\\n- **Comparar vs setor** (ex: "Klabin vs média do setor de papel")\\n- **Mapa de vencimentos** (ex: "perfil de vencimentos da carteira")\\n- **Gráfico de spread** · **Gráfico por setor** · **Estresse**\\n- Exposição por **emissor**, **setor**, **rating** · **Top posições** · **Duration**\\n- Parâmetros: "DL/EBITDA > 3.5x no setor elétrico", "spread que mais abriu em 1 ano"\\n\\nComo quer começar?',
+  'Posso ajudar com:\n- **Análise completa** de emissor (ex: "análise completa da Klabin")\n- **Evolução temporal** (ex: "como evoluiu o EBITDA da Suzano?")\n- **Comparar vs setor** (ex: "Klabin vs média do setor de papel")\n- **Mapa de vencimentos** (ex: "perfil de vencimentos da carteira")\n- **Gráfico de spread** · **Gráfico por setor** · **Estresse**\n- Exposição por **emissor**, **setor**, **rating** · **Top posições** · **Duration**\n- Parâmetros: "DL/EBITDA > 3.5x no setor elétrico", "spread que mais abriu em 1 ano"\n\nComo quer começar?',
   'Não reconheci o contexto. Tenta: "posição em Equatorial", "gráfico spread de Klabin", "estresse da carteira" ou "mapa de risco".',
   'Hmm, não encontrei esse ponto. Tenta um emissor, setor, "estresse", "gráfico spread de X" ou "overview da carteira".'
 ];
@@ -4033,7 +5100,7 @@ function _extractOpVal(norm) {
   ];
   let op=null;
   for(const {pats,op:o} of opMap){if(pats.some(p=>norm.includes(_norm(p)))){op=o;break;}}
-  const nums=[...norm.matchAll(/[-+]?\\d+[,.]?\\d*/g)].map(m=>parseFloat(m[0].replace(',','.')));
+  const nums=[...norm.matchAll(/[-+]?\d+[,.]?\d*/g)].map(m=>parseFloat(m[0].replace(',','.')));
   if(op==='between'&&nums.length>=2) return {op,v1:Math.min(nums[0],nums[1]),v2:Math.max(nums[0],nums[1])};
   const v1=nums.length?nums[0]:null;
   if(!op&&v1!==null) op='>';
@@ -4041,9 +5108,9 @@ function _extractOpVal(norm) {
 }
 
 function _extractMeses(norm) {
-  const anoM=norm.match(/(?:ultimos|ultimo|last)\\s+(\\d+)\\s+anos?/);
+  const anoM=norm.match(/(?:ultimos|ultimo|last)\s+(\d+)\s+anos?/);
   if(anoM) return parseInt(anoM[1])*12;
-  const mesM=norm.match(/(?:ultimos|ultimo|last)\\s+(\\d+)\\s+meses?/);
+  const mesM=norm.match(/(?:ultimos|ultimo|last)\s+(\d+)\s+meses?/);
   if(mesM) return parseInt(mesM[1]);
   if(/ultimo ano|ultimos 12 meses/.test(norm)) return 12;
   if(/ultimo trimestre|ultimos 3 meses|no trimestre|neste trimestre|no ultimo trimestre/.test(norm)) return 3;
@@ -4096,7 +5163,7 @@ function _isParamQuery(norm) {
   if(!temCampo) return false;
   const {op,v1}=_extractOpVal(norm);
   const temMeses=_extractMeses(norm)!==null;
-  const temSort=['mais abriram','mais fecharam','maiores','menores','mais alto','mais baixo','mais alavancados','mais alavancado','piores','melhores','que mais','ranking','top \\d','quais tem','quais estao com','emissores com','ativos com','empresas com','maior alta','maior queda','maior abertura','maior fechamento','mais subiram','mais caiu','mais aumentou','mais deteriorou','variacao de','variacao do','variacao da','piora de','desalavancagem','delta'].some(w=>new RegExp(w).test(norm));
+  const temSort=['mais abriram','mais fecharam','maiores','menores','mais alto','mais baixo','mais alavancados','mais alavancado','piores','melhores','que mais','ranking','top \d','quais tem','quais estao com','emissores com','ativos com','empresas com','maior alta','maior queda','maior abertura','maior fechamento','mais subiram','mais caiu','mais aumentou','mais deteriorou','variacao de','variacao do','variacao da','piora de','desalavancagem','delta'].some(w=>new RegExp(w).test(norm));
   const temOpVal=op!==null&&v1!==null;
   return temOpVal||temMeses||temSort;
 }
@@ -4176,11 +5243,11 @@ function _queryAtivos(intent,ent,userTxt) {
       const labels=top.map(i=>i.em);
       const data=top.map(i=>parseFloat(i.delta.toFixed(1)));
       const colors=data.map(v=>v>0?'rgba(224,82,82,.75)':'rgba(74,191,203,.75)');
-      const linhas=top.map((x,i)=>(i+1)+'. **'+x.em+'** ('+x.setor+'): '+(x.delta>=0?'+':'')+x.delta.toFixed(1)+'bps | atual: '+(x.cur*100).toFixed(0)+'bps → antes: '+(x.past*100).toFixed(0)+'bps').join('\\n');
+      const linhas=top.map((x,i)=>(i+1)+'. **'+x.em+'** ('+x.setor+'): '+(x.delta>=0?'+':'')+x.delta.toFixed(1)+'bps | atual: '+(x.cur*100).toFixed(0)+'bps → antes: '+(x.past*100).toFixed(0)+'bps').join('\n');
       const _co={color:'#718096',font:{size:8}};
       _ctx.lastList=top.map(x=>({em:x.em}));
       return {
-        text:(sortDesc?'**Spreads que mais abriram**':'**Spreads que mais fecharam**')+' — '+periStr+secStr+threshStr+' · **'+cartStr+'**\\n\\n'+linhas+'\\n\\n*(Diga "análise completa do 1" para detalhar qualquer emissor.)*',
+        text:(sortDesc?'**Spreads que mais abriram**':'**Spreads que mais fecharam**')+' — '+periStr+secStr+threshStr+' · **'+cartStr+'**\n\n'+linhas+'\n\n*(Diga "análise completa do 1" para detalhar qualquer emissor.)*',
         chartTitulo:'Δ SPREAD '+periStr.toUpperCase()+(ent.setor?' · '+ent.setor.toUpperCase():''),
         chart:{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+(ctx.raw>0?'+':'')+ctx.raw+'bps'}}},scales:{x:{ticks:{..._co,callback:v=>v+'bps'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co},grid:{display:false}}}}}
       };
@@ -4230,7 +5297,7 @@ function _queryAtivos(intent,ent,userTxt) {
         const d=ci.fmt==='x'?sinal+x.delta.toFixed(2)+'x':ci.fmt==='%'?sinal+(x.delta*100).toFixed(1)+'pp':ci.fmt==='mi'?sinal+(x.delta/1e6).toFixed(0)+'M':sinal+x.delta.toFixed(2);
         const warn=ci.limiar!=null&&x.valCur>ci.limiar?' ⚠':'';
         return (i+1)+'. **'+x.em+'** ('+x.setor+' · '+x.rating+'): atual '+cur+warn+' | Δ: **'+d+'** — R$ '+(x.saldo/1e6).toFixed(2)+' Mi';
-      }).join('\\n');
+      }).join('\n');
       const labels=top.map(x=>x.em);
       const data=top.map(x=>{
         if(ci.fmt==='%') return parseFloat((x.delta*100).toFixed(2));
@@ -4244,7 +5311,7 @@ function _queryAtivos(intent,ent,userTxt) {
       const _co={color:'#718096',font:{size:8}};
       _ctx.lastList=top.map(x=>({em:x.em}));
       return {
-        text:titulo+'\\n\\n'+linhas+(itens.length>12?'\\n\\n*('+itens.length+' emissores com dados, top 12)*':'')+'\\n\\n*(Diga "análise completa do 1" para detalhar qualquer emissor.)*',
+        text:titulo+'\n\n'+linhas+(itens.length>12?'\n\n*('+itens.length+' emissores com dados, top 12)*':'')+'\n\n*(Diga "análise completa do 1" para detalhar qualquer emissor.)*',
         chartTitulo:'Δ '+ci.label.toUpperCase()+' · '+periStr.toUpperCase()+(ent.setor?' · '+ent.setor.toUpperCase():''),
         chart:{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const v=ctx.raw;return ' Δ: '+(v>=0?'+':'')+v+(ci.fmt==='x'?'x':ci.fmt==='%'?'pp':ci.fmt==='mi'?'M':'');}}}},scales:{x:{ticks:{..._co},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,font:{size:9}},grid:{display:false}}}}}
       };
@@ -4282,7 +5349,7 @@ function _queryAtivos(intent,ent,userTxt) {
       const linhas=top.map((x,i)=>{
         const warn=ci.limiar!=null&&((ci.limiarDir==='>'&&x.val>ci.limiar)||(ci.limiarDir==='<'&&x.val<ci.limiar))?' ⚠':'';
         return (i+1)+'. **'+x.em+'** ('+x.setor+' · '+x.rating+'): **'+_fmtV(x.val,ci.fmt)+'**'+warn+' — R$ '+(x.saldo/1e6).toFixed(2)+' Mi';
-      }).join('\\n');
+      }).join('\n');
       const labels=top.map(x=>x.em);
       const data=top.map(x=>{
         if(ci.fmt==='%') return parseFloat((x.val*100).toFixed(1));
@@ -4300,10 +5367,10 @@ function _queryAtivos(intent,ent,userTxt) {
         datasets.push({type:'line',label:'Limiar ('+_fmtV(ci.limiar,ci.fmt)+')',data:Array(data.length).fill(limVal),borderColor:'#e0b43c',borderDash:[5,3],borderWidth:1.5,pointRadius:0,fill:false});
       }
       const _co={color:'#718096',font:{size:8}};
-      const axCb=ci.fmt==='%'?'v=>v+\"%\"':ci.fmt==='x'?'v=>v+\"x\"':ci.fmt==='mi'?'v=>\"R$\"+v+\"M\"':'undefined';
+      const axCb=ci.fmt==='%'?'v=>v+"%"':ci.fmt==='x'?'v=>v+"x"':ci.fmt==='mi'?'v=>"R$"+v+"M"':'undefined';
       _ctx.lastList=top.map(x=>({em:x.em}));
       return {
-        text:'**'+ci.label+'**'+threshStr+secStr+' — **'+cartStr+'**\\n\\n'+linhas+(itens.length>topN?'\\n\\n*('+itens.length+' emissores encontrados, top '+topN+')*':'')+(itens.filter(x=>ci.limiar!=null&&((ci.limiarDir==='>'&&x.val>ci.limiar)||(ci.limiarDir==='<'&&x.val<ci.limiar))).length?'\\n\\n⚠ **'+itens.filter(x=>ci.limiar!=null&&((ci.limiarDir==='>'&&x.val>ci.limiar)||(ci.limiarDir==='<'&&x.val<ci.limiar))).length+' emissor(es)** no limiar de alerta de covenant.':''),
+        text:'**'+ci.label+'**'+threshStr+secStr+' — **'+cartStr+'**\n\n'+linhas+(itens.length>topN?'\n\n*('+itens.length+' emissores encontrados, top '+topN+')*':'')+(itens.filter(x=>ci.limiar!=null&&((ci.limiarDir==='>'&&x.val>ci.limiar)||(ci.limiarDir==='<'&&x.val<ci.limiar))).length?'\n\n⚠ **'+itens.filter(x=>ci.limiar!=null&&((ci.limiarDir==='>'&&x.val>ci.limiar)||(ci.limiarDir==='<'&&x.val<ci.limiar))).length+' emissor(es)** no limiar de alerta de covenant.':''),
         chartTitulo:ci.label.toUpperCase()+(ent.setor?' · '+ent.setor.toUpperCase():''),
         chart:{type:'bar',data:{labels,datasets},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:datasets.length>1,position:'bottom',labels:{color:'#8a9ab0',font:{size:9},boxWidth:8,padding:6}},tooltip:{callbacks:{label:ctx=>' '+ctx.raw+(ci.fmt==='x'?'x':ci.fmt==='%'?'%':'')}}},scales:{x:{ticks:{..._co},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,font:{size:9}},grid:{display:false}}}}}
       };
@@ -4372,14 +5439,14 @@ function _queryAtivos(intent,ent,userTxt) {
       const dur=x.durW>0?(x.durSum/x.durW).toFixed(1)+'a':'—';
       const sp=x.spread!=null?(x.spread*100).toFixed(2)+'%':'—';
       return (i+1)+'. **'+x.em+'** ('+x.setor+') — R$ '+(x.saldo/1e6).toFixed(2)+' Mi | Duration: '+dur+' | Spread: '+sp+' | '+x.status;
-    }).join('\\n');
+    }).join('\n');
     const labels=lista.slice(0,12).map(x=>x.em);
     const data=lista.slice(0,12).map(x=>parseFloat((x.saldo/1e6).toFixed(2)));
     const colors=lista.slice(0,12).map(x=>x.status==='Aprovado'?'rgba(74,191,203,.75)':x.status==='Watch'?'rgba(240,180,50,.75)':'rgba(224,82,82,.75)');
     _ctx.lastList=lista.map(x=>({em:x.em}));
     const _co={color:'#718096',font:{size:8}};
     return {
-      text:'**Multi-filtro:** '+filtrosApl.join(' · ')+' — **'+cartStr+'**\\n\\n'+lista.length+' emissor(es) · R$ '+(totalFilt/1e6).toFixed(2)+' Mi\\n\\n'+linhas+(lista.length>15?'\\n\\n*(mostrando top 15 de '+lista.length+')*':'')+'\\n\\n*(Diga "análise completa do 1" para detalhar qualquer emissor.)*',
+      text:'**Multi-filtro:** '+filtrosApl.join(' · ')+' — **'+cartStr+'**\n\n'+lista.length+' emissor(es) · R$ '+(totalFilt/1e6).toFixed(2)+' Mi\n\n'+linhas+(lista.length>15?'\n\n*(mostrando top 15 de '+lista.length+')*':'')+'\n\n*(Diga "análise completa do 1" para detalhar qualquer emissor.)*',
       chartTitulo:'MULTI-FILTRO: '+filtrosApl.join(' | ').toUpperCase(),
       chart:{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' R$ '+ctx.raw+'M'}}},scales:{x:{ticks:{..._co,callback:v=>'R$'+v+'M'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,font:{size:9}},grid:{display:false}}}}}
     };
@@ -4391,7 +5458,7 @@ function _queryAtivos(intent,ent,userTxt) {
     const saldo=matched.reduce((s,a)=>s+(a.saldo||0),0);
     const pct=totalCart>0?((saldo/totalCart)*100).toFixed(1):'0';
     const topEm=[...new Set(matched.map(a=>a.emissor).filter(Boolean))].slice(0,5).join(', ');
-    return 'A exposição da carteira **'+cartStr+'** no setor de **'+ent.setor.toUpperCase()+'** é de **R$ '+(saldo/1e6).toFixed(2)+' Mi** ('+pct+'% da carteira).\\n\\n'+(topEm?'Principais emissores: '+topEm+'.\\n\\n':'')+'Quer ver cada emissor detalhado?';
+    return 'A exposição da carteira **'+cartStr+'** no setor de **'+ent.setor.toUpperCase()+'** é de **R$ '+(saldo/1e6).toFixed(2)+' Mi** ('+pct+'% da carteira).\n\n'+(topEm?'Principais emissores: '+topEm+'.\n\n':'')+'Quer ver cada emissor detalhado?';
   }
 
   if (intent==='exposicao_rating') {
@@ -4399,7 +5466,7 @@ function _queryAtivos(intent,ent,userTxt) {
     const matched=ativosCart.filter(a=>(a['Rating Douro']||'').toUpperCase()===ent.rating.toUpperCase());
     const saldo=matched.reduce((s,a)=>s+(a.saldo||0),0);
     const pct=totalCart>0?((saldo/totalCart)*100).toFixed(1):'0';
-    return 'A carteira **'+cartStr+'** possui **R$ '+(saldo/1e6).toFixed(2)+' Mi** ('+pct+'%) em ativos com Rating Douro **'+ent.rating+'**.\\n\\nQuer ver o breakdown de quais ativos compõem esse rating?';
+    return 'A carteira **'+cartStr+'** possui **R$ '+(saldo/1e6).toFixed(2)+' Mi** ('+pct+'%) em ativos com Rating Douro **'+ent.rating+'**.\n\nQuer ver o breakdown de quais ativos compõem esse rating?';
   }
 
   if (intent==='exposicao_emissor') {
@@ -4409,7 +5476,7 @@ function _queryAtivos(intent,ent,userTxt) {
     const saldo=matched.reduce((s,a)=>s+(a.saldo||0),0);
     const pct=totalCart>0?((saldo/totalCart)*100).toFixed(1):'0';
     const dur=saldo>0?(matched.reduce((s,a)=>s+(a.duration||0)*(a.saldo||0),0)/saldo).toFixed(1):'—';
-    return 'A posição em **'+ent.emissor+'** na carteira **'+cartStr+'** é de **R$ '+(saldo/1e6).toFixed(2)+' Mi** ('+pct+'% da carteira), duration média de '+dur+'a.\\n\\nQuer ver o spread atual contra a NTN-B?';
+    return 'A posição em **'+ent.emissor+'** na carteira **'+cartStr+'** é de **R$ '+(saldo/1e6).toFixed(2)+' Mi** ('+pct+'% da carteira), duration média de '+dur+'a.\n\nQuer ver o spread atual contra a NTN-B?';
   }
 
   if (intent==='overview_carteira') {
@@ -4417,7 +5484,7 @@ function _queryAtivos(intent,ent,userTxt) {
     const aprovados=validos.filter(a=>a.Status==='Aprovado').reduce((s,a)=>s+(a.saldo||0),0);
     const emWatch=validos.filter(a=>['Em análise','Watch','Monitoramento'].includes(a.Status)).length;
     const nSet=new Set(validos.map(a=>a.setor).filter(Boolean)).size;
-    return 'Overview — **'+cartStr+'**:\\n- **Total Crédito:** R$ '+(totalCart/1e6).toFixed(2)+' Mi\\n- **Ativos com saldo:** '+validos.length+'\\n- **Setores:** '+nSet+'\\n- **% Aprovados:** '+(totalCart>0?(aprovados/totalCart*100).toFixed(1):'0')+'%\\n- **Em watch/análise:** '+emWatch+' ativo(s)\\n\\nQuer o top 5 posições ou breakdown por setor?';
+    return 'Overview — **'+cartStr+'**:\n- **Total Crédito:** R$ '+(totalCart/1e6).toFixed(2)+' Mi\n- **Ativos com saldo:** '+validos.length+'\n- **Setores:** '+nSet+'\n- **% Aprovados:** '+(totalCart>0?(aprovados/totalCart*100).toFixed(1):'0')+'%\n- **Em watch/análise:** '+emWatch+' ativo(s)\n\nQuer o top 5 posições ou breakdown por setor?';
   }
 
   if (intent==='top_exposicoes') {
@@ -4425,7 +5492,7 @@ function _queryAtivos(intent,ent,userTxt) {
     ativosCart.forEach(a=>{agrp[a.emissor||'N/D']=(agrp[a.emissor||'N/D']||0)+(a.saldo||0);});
     const top=Object.entries(agrp).sort((a,b)=>b[1]-a[1]).slice(0,5);
     _ctx.lastList=top.map(t=>({em:t[0]}));
-    return 'Maiores posições — **'+cartStr+'**:\\n'+top.map((t,i)=>(i+1)+'. **'+t[0]+'**: R$ '+(t[1]/1e6).toFixed(2)+' Mi ('+(totalCart>0?((t[1]/totalCart)*100).toFixed(1):'0')+'%)').join('\\n')+'\\n\\nQuer ver por setor ou rating? (Diga "me conta mais sobre o 1" para análise completa.)';
+    return 'Maiores posições — **'+cartStr+'**:\n'+top.map((t,i)=>(i+1)+'. **'+t[0]+'**: R$ '+(t[1]/1e6).toFixed(2)+' Mi ('+(totalCart>0?((t[1]/totalCart)*100).toFixed(1):'0')+'%)').join('\n')+'\n\nQuer ver por setor ou rating? (Diga "me conta mais sobre o 1" para análise completa.)';
   }
 
   if (intent==='status_cobertura') {
@@ -4433,7 +5500,7 @@ function _queryAtivos(intent,ent,userTxt) {
     if(!matched.length) return 'Não há ativos em análise/watch/reprovado na carteira **'+cartStr+'**.';
     const saldo=matched.reduce((s,a)=>s+(a.saldo||0),0);
     _ctx.lastList=matched.slice(0,8).map(a=>({em:a.emissor||a.ticker}));
-    return 'Há **'+matched.length+' ativo(s)** em análise/watch/monitoramento na carteira **'+cartStr+'**, totalizando **R$ '+(saldo/1e6).toFixed(2)+' Mi**.\\n\\n'+matched.slice(0,8).map((a,i)=>(i+1)+'. **'+(a.emissor||a.ticker)+'** ('+(a.ticker||'')+'): '+a.Status).join('\\n')+'\\n\\n*(Diga "análise completa do 1" para detalhes de qualquer emissor.)*';
+    return 'Há **'+matched.length+' ativo(s)** em análise/watch/monitoramento na carteira **'+cartStr+'**, totalizando **R$ '+(saldo/1e6).toFixed(2)+' Mi**.\n\n'+matched.slice(0,8).map((a,i)=>(i+1)+'. **'+(a.emissor||a.ticker)+'** ('+(a.ticker||'')+'): '+a.Status).join('\n')+'\n\n*(Diga "análise completa do 1" para detalhes de qualquer emissor.)*';
   }
 
   if (intent==='divergencia_rating') {
@@ -4455,23 +5522,23 @@ function _queryAtivos(intent,ent,userTxt) {
     if(!divs.length&&!rankExtra.length) return 'Não encontrei divergências de rating na carteira **'+cartStr+'**.';
     let resp='';
     if(divs.length){
-      resp+='**'+divs.length+' ativo(s) com divergência** na carteira **'+cartStr+'**:\\n';
+      resp+='**'+divs.length+' ativo(s) com divergência** na carteira **'+cartStr+'**:\n';
       resp+=divs.slice(0,8).map(a=>{
         const rd=a['Rating Douro']||'N/D';
         const rm=a['Rating base S&P']||'N/D';
         const dir=rd>rm?'↑ Douro melhor':'↓ Douro mais conservador';
         return '- **'+(a.emissor||a.ticker)+'**: Douro='+rd+' | Mercado='+rm+' ('+dir+')';
-      }).join('\\n');
+      }).join('\n');
     }
     if(rankExtra.length){
-      if(resp) resp+='\\n\\n';
-      resp+='**'+rankExtra.length+' emissor(es) cobertos** com divergência (sem posição atual):\\n';
+      if(resp) resp+='\n\n';
+      resp+='**'+rankExtra.length+' emissor(es) cobertos** com divergência (sem posição atual):\n';
       resp+=rankExtra.slice(0,5).map(r=>{
         const rd=r.ratingDouro||'N/D';
         const rm=r.ratingMkt||'N/D';
         const dir=rd>rm?'↑ Douro melhor':'↓ Douro mais conservador';
         return '- **'+r.empresa+'**: Douro='+rd+' | Mercado='+rm+' ('+dir+')';
-      }).join('\\n');
+      }).join('\n');
     }
     return resp;
   }
@@ -4482,7 +5549,7 @@ function _queryAtivos(intent,ent,userTxt) {
     const byS={};
     validos.forEach(a=>{const s=a.setor||'N/D';if(!byS[s])byS[s]={saldo:0,ds:0};byS[s].saldo+=(a.saldo||0);byS[s].ds+=(a.duration||0)*(a.saldo||0);});
     const topD=Object.entries(byS).sort((a,b)=>b[1].saldo-a[1].saldo).slice(0,4).map(([s,v])=>s+': '+(v.saldo>0?(v.ds/v.saldo).toFixed(1):'—')+'a').join(' | ');
-    return 'Duration médio ponderado — **'+cartStr+'**: **'+durPond+' anos**\\n\\nPor setor (top 4): '+topD;
+    return 'Duration médio ponderado — **'+cartStr+'**: **'+durPond+' anos**\n\nPor setor (top 4): '+topD;
   }
 
   if (intent==='comparar_emissores') {
@@ -4511,8 +5578,8 @@ function _queryAtivos(intent,ent,userTxt) {
       const sp=ms[0].spread!=null?Number(ms[0].spread).toFixed(3)+'%':'N/D';
       const p=tot>0?((s/tot)*100).toFixed(1):'—';
       return '- **'+em+'**: R$ '+(s/1e6).toFixed(2)+' Mi ('+p+'%) · Duration: '+dur+'a · Spread: '+sp+' · Rating Douro: '+(ms[0]['Rating Douro']||'N/D')+' · Status: '+(ms[0].Status||'N/D');
-    }).join('\\n');
-    return 'Comparativo: **'+valid.join(' vs ')+'**\\n\\n'+linhas+'\\n\\nQuer aprofundar em algum deles?';
+    }).join('\n');
+    return 'Comparativo: **'+valid.join(' vs ')+'**\n\n'+linhas+'\n\nQuer aprofundar em algum deles?';
   }
 
   if (intent==='detalhe_ativo') {
@@ -4541,7 +5608,7 @@ function _queryAtivos(intent,ent,userTxt) {
     }
     const ntnbStr=matched.find(a=>a.ntnb_ref&&a.ntnb_ref!=='None'&&a.ntnb_ref!=='NaT')?.ntnb_ref||'—';
     const taxaStr=matched[0].valor!=null&&!isNaN(Number(matched[0].valor))?Number(matched[0].valor).toFixed(3)+'%':'N/D';
-    return 'Detalhe — **'+ent.emissor+'**\\n\\n- **Saldo:** R$ '+(saldo/1e6).toFixed(2)+' Mi ('+matched.length+' ativo(s))\\n- **Taxa atual:** '+taxaStr+'\\n- **Spread vs NTN-B:** '+spreadInfo+'\\n- **NTN-B Ref:** '+ntnbStr+'\\n- **Duration média:** '+durPond+'a\\n- **Rating Douro:** '+(matched[0]['Rating Douro']||'N/D')+'\\n- **Status:** '+(matched[0].Status||'N/D')+'\\n\\nQuer ver a evolução histórica do spread?';
+    return 'Detalhe — **'+ent.emissor+'**\n\n- **Saldo:** R$ '+(saldo/1e6).toFixed(2)+' Mi ('+matched.length+' ativo(s))\n- **Taxa atual:** '+taxaStr+'\n- **Spread vs NTN-B:** '+spreadInfo+'\n- **NTN-B Ref:** '+ntnbStr+'\n- **Duration média:** '+durPond+'a\n- **Rating Douro:** '+(matched[0]['Rating Douro']||'N/D')+'\n- **Status:** '+(matched[0].Status||'N/D')+'\n\nQuer ver a evolução histórica do spread?';
   }
 
   if (intent==='analise_spreads') {
@@ -4574,10 +5641,10 @@ function _queryAtivos(intent,ent,userTxt) {
       const zStr=item.zscore!=null?' | z='+item.zscore.toFixed(1):'';
       const d7Str=item.delta7d!=null?' | delta7d: '+(item.delta7d>=0?'+':'')+item.delta7d.toFixed(3)+'%':'';
       const alerta=item.mad1!=null&&item.spreadAt>item.mad1?' ⚠':'';
-      return (i+1)+'. **'+item.emissor+'** ('+item.setor+')\\n   Spread: '+item.spreadAt.toFixed(3)+'% | Mediana: '+(item.mediana!=null?item.mediana.toFixed(3)+'%':'N/D')+zStr+d7Str+alerta;
-    }).join('\\n');
+      return (i+1)+'. **'+item.emissor+'** ('+item.setor+')\n   Spread: '+item.spreadAt.toFixed(3)+'% | Mediana: '+(item.mediana!=null?item.mediana.toFixed(3)+'%':'N/D')+zStr+d7Str+alerta;
+    }).join('\n');
     const acimaMad=itens.filter(i=>i.mad1!=null&&i.spreadAt>i.mad1).length;
-    return titulo+'\\n\\n'+linhas+(acimaMad>0?'\\n\\n⚠ **'+acimaMad+' ativo(s)** acima de +1 MAD — spreads historicamente elevados.':'\\nSpreads dentro da banda histórica normal.')+'\\n\\nQuer aprofundar em algum desses emissores?';
+    return titulo+'\n\n'+linhas+(acimaMad>0?'\n\n⚠ **'+acimaMad+' ativo(s)** acima de +1 MAD — spreads historicamente elevados.':'\nSpreads dentro da banda histórica normal.')+'\n\nQuer aprofundar em algum desses emissores?';
   }
 
   // ── GRÁFICO DE SPREAD ────────────────────────────────────────────────────
@@ -4602,7 +5669,7 @@ function _queryAtivos(intent,ent,userTxt) {
     if(mad1!=null) datasets.push({label:'+1MAD ('+mad1.toFixed(3)+'%)',data:Array(data.length).fill(mad1),borderColor:'#e05252',borderDash:[3,3],borderWidth:1,pointRadius:0,fill:false});
     const _co={color:'#718096',font:{size:8}};
     return {
-      text:'Spread de **'+ent.emissor+'** ('+bestTk+') — últimas '+data.length+' observações.\\n\\nAtual: **'+cur.toFixed(3)+'%**'+deltaStr+(mad1!=null&&cur>mad1?'\\n\\n⚠ Spread **acima de +1 MAD** — historicamente elevado.':''),
+      text:'Spread de **'+ent.emissor+'** ('+bestTk+') — últimas '+data.length+' observações.\n\nAtual: **'+cur.toFixed(3)+'%**'+deltaStr+(mad1!=null&&cur>mad1?'\n\n⚠ Spread **acima de +1 MAD** — historicamente elevado.':''),
       chartTitulo:'SPREAD · '+bestTk,
       chart:{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:true,position:'bottom',labels:{color:'#8a9ab0',font:{size:9},boxWidth:8,padding:8}}},scales:{x:{ticks:{..._co,maxTicksLimit:6},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,callback:v=>v.toFixed(2)+'%'},grid:{color:'rgba(255,255,255,.04)'}}}}}
     };
@@ -4618,10 +5685,10 @@ function _queryAtivos(intent,ent,userTxt) {
     const data=sorted.map(s=>parseFloat((s[1]/1e6).toFixed(2)));
     const tot=sorted.reduce((s,x)=>s+x[1],0);
     const CORES=['#00677b','#b69d74','#4abfcb','#6b8cad','#d4a843','#5a7fa0','#88b3b0','#8b7355','#4a7c6f','#c4956a'];
-    const pctLinhas=sorted.slice(0,6).map((s,i)=>(i+1)+'. **'+s[0]+'**: R$ '+(s[1]/1e6).toFixed(1)+' Mi ('+(tot>0?(s[1]/tot*100).toFixed(1):'0')+'%)').join('\\n');
+    const pctLinhas=sorted.slice(0,6).map((s,i)=>(i+1)+'. **'+s[0]+'**: R$ '+(s[1]/1e6).toFixed(1)+' Mi ('+(tot>0?(s[1]/tot*100).toFixed(1):'0')+'%)').join('\n');
     const _co={color:'#718096',font:{size:9}};
     return {
-      text:'Exposição por setor — **'+cartStr+'**:\\n\\n'+pctLinhas,
+      text:'Exposição por setor — **'+cartStr+'**:\n\n'+pctLinhas,
       chartTitulo:'DISTRIBUIÇÃO SETORIAL (R$ Mi)',
       chart:{type:'bar',data:{labels,datasets:[{data,backgroundColor:labels.map((_,i)=>CORES[i%CORES.length]),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' R$ '+ctx.raw+' Mi'}}},scales:{x:{ticks:{..._co,callback:v=>'R$'+v+'M'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co},grid:{display:false}}}}}
     };
@@ -4662,9 +5729,9 @@ function _queryAtivos(intent,ent,userTxt) {
       if(e.spStress) flags.push('spread '+(e.zscore?'+'+e.zscore.toFixed(1)+'σ':'> +1MAD'));
       if(e.statusRisco) flags.push(e.status);
       return '- **'+e.em+'** ('+e.setor+' · '+e.rating+'): '+flags.join(' | ')+' — R$ '+(e.saldo/1e6).toFixed(2)+' Mi';
-    }).join('\\n');
+    }).join('\n');
     const nivel=itens.length>=4?'⚠ **Alerta de refinanciamento**':itens.length>=2?'🔍 **Atenção preventiva**':'📌 **Monitoramento pontual**';
-    return nivel+' — **'+cartStr+'**\\n\\nExposição sob stress: **R$ '+(totalStr/1e6).toFixed(2)+' Mi** ('+pct+'% da carteira)\\n\\n'+linhas+'\\n\\n*Critérios: spread > +1.5σ histórico ou status crítico de cobertura. Emissores com maior risco de acesso ao mercado de capitais em cenário de alta de juros.*';
+    return nivel+' — **'+cartStr+'**\n\nExposição sob stress: **R$ '+(totalStr/1e6).toFixed(2)+' Mi** ('+pct+'% da carteira)\n\n'+linhas+'\n\n*Critérios: spread > +1.5σ histórico ou status crítico de cobertura. Emissores com maior risco de acesso ao mercado de capitais em cenário de alta de juros.*';
   }
 
   // ── MAPA DE RISCO POR EMISSOR ────────────────────────────────────────────
@@ -4684,9 +5751,9 @@ function _queryAtivos(intent,ent,userTxt) {
       const watchFlag=['Em análise','Watch','Monitoramento','Reprovado'].includes(e.status)?' ⚠':'';
       const riskEmoji=e.riskScore<=7?'🔴':e.riskScore<=11?'🟡':'🟢';
       return riskEmoji+' **'+e.em+'** · '+e.rating+' · '+e.setor+' · R$ '+(e.saldo/1e6).toFixed(2)+' Mi'+watchFlag;
-    }).join('\\n');
+    }).join('\n');
     _ctx.lastList=lista.slice(0,10).map(e=>({em:e.em}));
-    return 'Mapa de risco — **'+cartStr+'** (do mais ao menos arriscado):\\n\\n'+linhas+(watchCount?'\\n\\n⚠ **'+watchCount+' emissor(es)** com status crítico de cobertura (Watch/Análise/Reprovado).':'\\n\\nCarteira sem alertas críticos de cobertura.')+'\\n\\n*(Diga "análise completa do 1" para detalhar.)*';
+    return 'Mapa de risco — **'+cartStr+'** (do mais ao menos arriscado):\n\n'+linhas+(watchCount?'\n\n⚠ **'+watchCount+' emissor(es)** com status crítico de cobertura (Watch/Análise/Reprovado).':'\n\nCarteira sem alertas críticos de cobertura.')+'\n\n*(Diga "análise completa do 1" para detalhar.)*';
   }
 
   // ── EVOLUÇÃO TEMPORAL DE FUNDAMENTAIS ──────────────────────────────────────
@@ -4714,7 +5781,7 @@ function _queryAtivos(intent,ent,userTxt) {
       const periStr=meses>=12?(meses/12).toFixed(0)+'a':meses+'m';
       const deltaFmt=(delta>=0?'+':'')+(ci.fmt==='%'?(delta*100).toFixed(1)+'%':ci.fmt==='x'?delta.toFixed(2)+'x':ci.fmt==='mi'?'R$ '+(delta/1e6).toFixed(0)+' Mi':delta.toFixed(2));
       return {
-        text:'Evolução de **'+ci.label+'** — **'+ent.emissor+'** ('+periStr+')\\n\\nAtual: **'+_fmtV(lastV,ci.fmt)+'** | Var. período: **'+deltaFmt+'** '+(delta>=0?'↑':'↓'),
+        text:'Evolução de **'+ci.label+'** — **'+ent.emissor+'** ('+periStr+')\n\nAtual: **'+_fmtV(lastV,ci.fmt)+'** | Var. período: **'+deltaFmt+'** '+(delta>=0?'↑':'↓'),
         chartTitulo:'EVOLUÇÃO '+ci.label.toUpperCase()+' · '+ent.emissor.toUpperCase(),
         chart:{type:'line',data:{labels,datasets:[{label:ci.label,data,borderColor:'#4abfcb',backgroundColor:'rgba(74,191,203,.10)',tension:.4,pointRadius:2,pointBackgroundColor:'#4abfcb',borderWidth:2,fill:true,spanGaps:true},{label:'Tendência',data:trendLine,borderColor:'rgba(182,157,116,.6)',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:true,position:'bottom',labels:{color:'#8a9ab0',font:{size:9},boxWidth:8,padding:6}}},scales:{x:{ticks:{..._co,maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,callback:v=>v+(ci.fmt==='x'?'x':ci.fmt==='%'?'%':'')},grid:{color:'rgba(255,255,255,.04)'}}}}}
       };
@@ -4735,7 +5802,7 @@ function _queryAtivos(intent,ent,userTxt) {
       const lastV=avgData.filter(v=>v!=null).slice(-1)[0];
       const periStr=meses>=12?(meses/12).toFixed(0)+'a':meses+'m';
       return {
-        text:'Evolução de **'+ci.label+'** — Setor **'+ent.setor+'** (média portfólio, '+periStr+')\\n\\nÚltima média: **'+_fmtV(lastV||0,ci.fmt)+'**',
+        text:'Evolução de **'+ci.label+'** — Setor **'+ent.setor+'** (média portfólio, '+periStr+')\n\nÚltima média: **'+_fmtV(lastV||0,ci.fmt)+'**',
         chartTitulo:'EVOLUÇÃO '+ci.label.toUpperCase()+' · SETOR '+ent.setor.toUpperCase(),
         chart:{type:'line',data:{labels:allDates,datasets:[{label:ci.label+' (média setor)',data,borderColor:'#b69d74',backgroundColor:'rgba(182,157,116,.10)',tension:.4,pointRadius:2,pointBackgroundColor:'#b69d74',borderWidth:2,fill:true,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false}},scales:{x:{ticks:{..._co,maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,callback:v=>v+(ci.fmt==='x'?'x':ci.fmt==='%'?'%':'')},grid:{color:'rgba(255,255,255,.04)'}}}}}
       };
@@ -4774,10 +5841,10 @@ function _queryAtivos(intent,ent,userTxt) {
       const delta=x.val-avg;
       const ds=(delta>=0?'+':'')+(ci.fmt==='%'?(delta*100).toFixed(1)+'%':ci.fmt==='x'?delta.toFixed(2)+'x':'R$ '+(delta/1e6).toFixed(0)+' Mi');
       return (i+1)+'.'+(x.isTarget?' **':' ')+x.em+(x.isTarget?'**':'')+': **'+(ci.fmt==='%'?(x.val*100).toFixed(1)+'%':_fmtV(x.val,ci.fmt))+'** ('+ds+' vs ⌀)';
-    }).join('\\n');
+    }).join('\n');
     const _co={color:'#718096',font:{size:8}};
     return {
-      text:'**'+ci.label+'** vs média do setor'+(setorRef?' — **'+setorRef+'**':'')+' · **'+cartStr+'**\\n\\n'+linhas+'\\n\\n⌀ Setor: **'+(ci.fmt==='%'?(avg*100).toFixed(1)+'%':_fmtV(avg,ci.fmt))+'**',
+      text:'**'+ci.label+'** vs média do setor'+(setorRef?' — **'+setorRef+'**':'')+' · **'+cartStr+'**\n\n'+linhas+'\n\n⌀ Setor: **'+(ci.fmt==='%'?(avg*100).toFixed(1)+'%':_fmtV(avg,ci.fmt))+'**',
       chartTitulo:ci.label.toUpperCase()+' vs ⌀ SETOR'+(setorRef?' · '+setorRef.toUpperCase():''),
       chart:{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw+sufx}}},scales:{x:{ticks:{..._co},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,font:{size:9}},grid:{display:false}}}}}
     };
@@ -4823,12 +5890,12 @@ function _queryAtivos(intent,ent,userTxt) {
       if(roe!=null) parts.push('ROE: **'+_fmtV(roe,'%')+'**');
       if(mgE!=null) parts.push('Mg EBITDA: **'+_fmtV(mgE,'%')+'**');
       if(fcf!=null){parts.push('FCF: **'+_fmtV(fcf,'mi')+'**');if(fcf<0)FLAGS.push('FCF negativo');}
-      if(parts.length) fundTxt='\\n\\n**Fundamentais:** '+parts.join(' · ');
+      if(parts.length) fundTxt='\n\n**Fundamentais:** '+parts.join(' · ');
     }
     const ratingDiv=ratingD!=='N/D'&&ratingM!=='N/D'&&ratingD!==ratingM?' ⚠ *divergência*':'';
     const statusFlag=['Em análise','Watch','Monitoramento'].includes(status)?' ⚠':'';
-    const flagStr=FLAGS.length?'\\n\\n⚠ **Alertas:** '+FLAGS.join(', ')+'.':'';
-    return '**Análise — '+ent.emissor+'**\\n\\n- **Posição:** R$ '+(saldo/1e6).toFixed(2)+' Mi ('+pct+'% · **'+cartStr+'**)\\n- **Setor:** '+setor+'\\n- **Duration:** '+durPond+'a\\n- **Rating Douro:** '+ratingD+(ratingM!=='N/D'?' · S&P: '+ratingM+ratingDiv:'')+'\\n- **Status:** '+status+statusFlag+'\\n- **Spread:** '+spreadTxt+spAlert+fundTxt+flagStr+'\\n\\nQuer a evolução temporal ou comparar com o setor?';
+    const flagStr=FLAGS.length?'\n\n⚠ **Alertas:** '+FLAGS.join(', ')+'.':'';
+    return '**Análise — '+ent.emissor+'**\n\n- **Posição:** R$ '+(saldo/1e6).toFixed(2)+' Mi ('+pct+'% · **'+cartStr+'**)\n- **Setor:** '+setor+'\n- **Duration:** '+durPond+'a\n- **Rating Douro:** '+ratingD+(ratingM!=='N/D'?' · S&P: '+ratingM+ratingDiv:'')+'\n- **Status:** '+status+statusFlag+'\n- **Spread:** '+spreadTxt+spAlert+fundTxt+flagStr+'\n\nQuer a evolução temporal ou comparar com o setor?';
   }
 
   // ── MAPA DE VENCIMENTOS (proxy: duration) ──────────────────────────────────
@@ -4852,12 +5919,12 @@ function _queryAtivos(intent,ent,userTxt) {
     const labels=buckets.map(b=>b.label);
     const data=labels.map(l=>parseFloat((result[l]/1e6).toFixed(2)));
     const CORES=['#e05252','#e0b43c','#4abfcb','#6b8cad','#00677b'];
-    const linhas=labels.map((l,i)=>(i+1)+'. **'+l+'**: R$ '+(result[l]/1e6).toFixed(1)+' Mi ('+(total>0?((result[l]/total)*100).toFixed(1):'0')+'%)'+(byBucketEm[l].length?' — '+byBucketEm[l].slice(0,3).join(', ')+(byBucketEm[l].length>3?' + '+(byBucketEm[l].length-3)+' mais':''):'')).join('\\n');
+    const linhas=labels.map((l,i)=>(i+1)+'. **'+l+'**: R$ '+(result[l]/1e6).toFixed(1)+' Mi ('+(total>0?((result[l]/total)*100).toFixed(1):'0')+'%)'+(byBucketEm[l].length?' — '+byBucketEm[l].slice(0,3).join(', ')+(byBucketEm[l].length>3?' + '+(byBucketEm[l].length-3)+' mais':''):'')).join('\n');
     const warnPct=total>0?(result['< 1a']||0)/total:0;
-    const warn=warnPct>0.15?'\\n\\n⚠ **'+((result['< 1a']||0)/1e6).toFixed(1)+' Mi ('+(warnPct*100).toFixed(0)+'%)** vencem/renovam em < 1 ano — risco de refinanciamento.':'';
+    const warn=warnPct>0.15?'\n\n⚠ **'+((result['< 1a']||0)/1e6).toFixed(1)+' Mi ('+(warnPct*100).toFixed(0)+'%)** vencem/renovam em < 1 ano — risco de refinanciamento.':'';
     const _co={color:'#718096',font:{size:9}};
     return {
-      text:'Perfil de Vencimentos por Duration — **'+cartStr+'**\\n*(duration como proxy de prazo médio de risco de taxa)*\\n\\n'+linhas+warn,
+      text:'Perfil de Vencimentos por Duration — **'+cartStr+'**\n*(duration como proxy de prazo médio de risco de taxa)*\n\n'+linhas+warn,
       chartTitulo:'PERFIL DE VENCIMENTOS POR DURATION',
       chart:{type:'bar',data:{labels,datasets:[{data,backgroundColor:CORES,borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:500},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' R$ '+ctx.raw+' Mi'}}},scales:{x:{ticks:{..._co},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{..._co,callback:v=>'R$'+v+'M'},grid:{color:'rgba(255,255,255,.04)'}}}}}
     };
@@ -4975,23 +6042,23 @@ function _douradoCmd(txt) {
     '/clear':     () => { document.getElementById('douradoMsgs').innerHTML=''; douradoWelcome(); return true; },
     '/limpar':    () => { document.getElementById('douradoMsgs').innerHTML=''; douradoWelcome(); return true; },
     '/help':      () => { douradoAddMsg('bot',
-      '**Comandos disponíveis**\\n\\n' +
-      '`/clear` — Limpa o histórico do chat\\n' +
-      '`/resumo` — Resumo geral da carteira\\n' +
-      '`/top [N]` — Top N maiores posições (padrão: 10)\\n' +
-      '`/spread` — Visão de spreads e alertas MAD\\n' +
-      '`/rating` — Distribuição de rating da carteira\\n' +
-      '`/setor` — Concentração por setor\\n' +
-      '`/duration` — Duration média ponderada\\n' +
-      '`/watch` — Emissores em watch / análise\\n' +
-      '`/stress` — Cenário de estresse: refinanciamento\\n' +
-      '`/vencimentos` — Perfil de vencimentos\\n' +
-      '`/alavancagem` — Ranking Dív.Liq/EBITDA\\n' +
-      '`/cobertura` — Status de cobertura de crédito\\n' +
-      '`/carteira [nome]` — Filtra análise por carteira\\n' +
-      '`/emissor [nome]` — Síntese completa de um emissor\\n' +
-      '`/comparar [A] vs [B]` — Compara dois emissores\\n' +
-      '`/grafico setor` — Gráfico de exposição por setor\\n' +
+      '**Comandos disponíveis**\n\n' +
+      '`/clear` — Limpa o histórico do chat\n' +
+      '`/resumo` — Resumo geral da carteira\n' +
+      '`/top [N]` — Top N maiores posições (padrão: 10)\n' +
+      '`/spread` — Visão de spreads e alertas MAD\n' +
+      '`/rating` — Distribuição de rating da carteira\n' +
+      '`/setor` — Concentração por setor\n' +
+      '`/duration` — Duration média ponderada\n' +
+      '`/watch` — Emissores em watch / análise\n' +
+      '`/stress` — Cenário de estresse: refinanciamento\n' +
+      '`/vencimentos` — Perfil de vencimentos\n' +
+      '`/alavancagem` — Ranking Dív.Liq/EBITDA\n' +
+      '`/cobertura` — Status de cobertura de crédito\n' +
+      '`/carteira [nome]` — Filtra análise por carteira\n' +
+      '`/emissor [nome]` — Síntese completa de um emissor\n' +
+      '`/comparar [A] vs [B]` — Compara dois emissores\n' +
+      '`/grafico setor` — Gráfico de exposição por setor\n' +
       '`/help` — Esta mensagem'
     ); return true; },
     '/resumo':    () => { _chipAndSend('Resumo geral da carteira'); return true; },
@@ -5038,7 +6105,7 @@ async function douradoSend() {
     }
   } catch(e) {
     thinkingEl.remove();
-    douradoAddMsg('bot','Erro interno no processamento. Tente novamente.\\n\\n*'+e.message+'*');
+    douradoAddMsg('bot','Erro interno no processamento. Tente novamente.\n\n*'+e.message+'*');
   }
 }
 // ── SIDEBAR RAIL ─────────────────────────────────────────────────────────────
@@ -5714,4 +6781,1092 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 })();
 
-<!--HIDDEN_FEATURES-->
+
+// ── COMPARADOR DE EMISSORES (Ctrl+Shift+C) ────────────────────────────────
+(function() {
+  const _css = `
+    #cmpOverlay {
+      display:none; position:fixed; inset:0; z-index:9998;
+      background:rgba(4,7,14,.97); flex-direction:column;
+      font-family:var(--font,'Montserrat',sans-serif);
+    }
+    #cmpOverlay.open { display:flex; animation:cmpSlideIn .28s cubic-bezier(.16,1,.3,1); }
+    @keyframes cmpSlideIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+    #cmpBar {
+      display:grid; grid-template-columns:1fr 60px 1fr 48px;
+      align-items:center; flex-shrink:0;
+      border-bottom:1px solid rgba(255,255,255,.055);
+      background:rgba(10,14,24,.9); backdrop-filter:blur(12px);
+    }
+    .cmp-slot {
+      display:flex; align-items:center; gap:10px; padding:14px 24px;
+      position:relative; border-right:1px solid rgba(255,255,255,.05);
+    }
+    .cmp-slot-letter {
+      width:28px; height:28px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; color:#fff;
+    }
+    .cmp-slot-inp {
+      flex:1; background:transparent; border:none; outline:none;
+      font-size:13.5px; font-weight:600; color:#e2e8f0;
+      font-family:var(--font,'Montserrat',sans-serif);
+    }
+    .cmp-slot-inp::placeholder { color:#252d3d; font-weight:400; }
+    .cmp-slot-status {
+      font-size:10px; font-weight:700; padding:2px 9px; border-radius:10px;
+      white-space:nowrap; flex-shrink:0;
+    }
+    .cmp-slot-status.green { background:rgba(47,168,116,.18); color:#2fa874; }
+    .cmp-slot-status.red   { background:rgba(217,65,65,.18);  color:#d94141; }
+    .cmp-slot-status.gold  { background:rgba(182,157,116,.18);color:#b69d74; }
+    .cmp-slot-status.gray  { background:rgba(74,85,104,.15);  color:#4a5568; }
+    .cmp-vs {
+      text-align:center; font-size:11px; font-weight:700; color:#1e2535;
+      letter-spacing:.12em; text-transform:uppercase;
+    }
+    #cmpCloseBtn {
+      background:transparent; border:none; color:#2d3748; font-size:18px;
+      cursor:pointer; height:100%; padding:0 16px; transition:color .15s;
+    }
+    #cmpCloseBtn:hover { color:#e2e8f0; }
+    .cmp-dd {
+      position:absolute; top:100%; left:0; right:0; z-index:200;
+      background:#0a0e1c; border:1px solid rgba(255,255,255,.08);
+      border-top:none; max-height:280px; overflow-y:auto;
+      box-shadow:0 20px 50px rgba(0,0,0,.7);
+    }
+    .cmp-dd::-webkit-scrollbar { width:3px; }
+    .cmp-dd::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:2px; }
+    .cmp-dd-row {
+      display:flex; align-items:center; gap:10px; padding:9px 16px;
+      cursor:pointer; transition:background .1s; border-bottom:1px solid rgba(255,255,255,.03);
+    }
+    .cmp-dd-row:hover { background:rgba(182,157,116,.07); }
+    .cmp-dd-name { flex:1; font-size:12.5px; color:#c8d0e0; font-weight:500; }
+    .cmp-dd-tag  { font-size:10px; color:#2d3748; }
+    #cmpBody {
+      flex:1; display:grid; grid-template-columns:1fr 1px 1fr; overflow:hidden;
+    }
+    .cmp-divider-v {
+      background:linear-gradient(to bottom,transparent,rgba(182,157,116,.2) 20%,rgba(182,157,116,.2) 80%,transparent);
+    }
+    .cmp-panel { overflow-y:auto; padding:24px 28px; }
+    .cmp-panel::-webkit-scrollbar { width:3px; }
+    .cmp-panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,.07); border-radius:2px; }
+    .cmp-empty-state {
+      height:100%; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:14px; color:#1a2030;
+    }
+    .cmp-empty-letter {
+      font-size:72px; font-weight:800; line-height:1;
+      background:linear-gradient(135deg,#1a2030,#0d1520);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .cmp-entity-head {
+      display:flex; align-items:center; gap:14px;
+      padding-bottom:18px; margin-bottom:18px;
+      border-bottom:1px solid rgba(255,255,255,.055);
+    }
+    .cmp-avatar {
+      width:44px; height:44px; border-radius:11px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; font-weight:800; color:#fff;
+    }
+    .cmp-ename { font-size:17px; font-weight:700; color:#e2e8f0; }
+    .cmp-emeta { font-size:11.5px; color:#3a4558; margin-top:3px; }
+    .cmp-kpis { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:18px; }
+    .cmp-kpi {
+      background:rgba(255,255,255,.022); border:1px solid rgba(255,255,255,.05);
+      border-radius:9px; padding:11px 13px; transition:border-color .2s;
+    }
+    .cmp-kpi:hover { border-color:rgba(255,255,255,.1); }
+    .cmp-kpi-lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#1e2840; }
+    .cmp-kpi-v   { font-family:var(--mono,'monospace'); font-size:19px; font-weight:700; color:#e2e8f0; margin-top:5px; line-height:1; }
+    .cmp-kpi-v.g { color:#2fa874; } .cmp-kpi-v.r { color:#d94141; } .cmp-kpi-v.o { color:#b69d74; }
+    .cmp-sec-lbl {
+      font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.12em;
+      color:#1e2840; margin:14px 0 8px; display:flex; align-items:center; gap:8px;
+    }
+    .cmp-sec-lbl::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.04); }
+    .cmp-pos-list { display:flex; flex-direction:column; gap:5px; }
+    .cmp-pos-row {
+      display:flex; align-items:center; gap:8px; padding:7px 10px;
+      background:rgba(255,255,255,.018); border:1px solid rgba(255,255,255,.04);
+      border-radius:7px;
+    }
+    .cmp-pos-name { flex:1; font-size:11.5px; color:#8899aa; }
+    .cmp-pos-cls  { font-size:10px; color:#2d3748; }
+    .cmp-pos-val  { font-family:var(--mono,'monospace'); font-size:12px; color:#c8d0e0; font-weight:600; }
+    #cmpFoot {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:9px 24px; border-top:1px solid rgba(255,255,255,.04);
+      font-size:10px; color:#1a2030; flex-shrink:0;
+    }
+    /* ── MODE SWITCHER ── */
+    #cmpModeBar {
+      display:flex; align-items:center; justify-content:center; gap:12px;
+      padding:8px 24px; flex-shrink:0;
+      background:rgba(6,9,18,.9); border-bottom:1px solid rgba(255,255,255,.04);
+    }
+    #cmpModeTrack {
+      position:relative; display:flex; align-items:stretch;
+      background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
+      border-radius:22px; padding:3px; user-select:none; cursor:pointer;
+    }
+    #cmpModeThumb {
+      position:absolute; top:3px; bottom:3px;
+      background:rgba(182,157,116,.18); border:1px solid rgba(182,157,116,.45);
+      border-radius:18px; transition:left .24s cubic-bezier(.4,0,.2,1),width .24s;
+      pointer-events:none; z-index:0;
+    }
+    .cmp-mode-seg {
+      position:relative; z-index:1; padding:5px 13px;
+      font-size:9.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+      color:#252d3d; border-radius:16px; transition:color .18s; white-space:nowrap;
+      cursor:pointer;
+    }
+    .cmp-mode-seg.active { color:#b69d74; }
+    #cmpModeLbl { font-size:9px; color:#1a2030; letter-spacing:.1em; text-transform:uppercase; }
+    /* ── TERMINAL MODE ── */
+    #cmpOverlay.mode-terminal { background:rgba(0,3,6,.99); }
+    #cmpOverlay.mode-terminal #cmpBar,
+    #cmpOverlay.mode-terminal #cmpModeBar { background:#000508; }
+    #cmpOverlay.mode-terminal .cmp-panel { background:transparent; }
+    #cmpOverlay.mode-terminal #cmpPanel0 .cmp-ename { color:#2fa874 !important; font-family:'Courier New',monospace; }
+    #cmpOverlay.mode-terminal #cmpPanel1 .cmp-ename { color:#6ba4d4 !important; font-family:'Courier New',monospace; }
+    #cmpOverlay.mode-terminal .cmp-kpi { background:#010a05; border-color:rgba(47,168,116,.12); }
+    #cmpOverlay.mode-terminal #cmpPanel1 .cmp-kpi { background:#010510; border-color:rgba(107,164,212,.12); }
+    #cmpOverlay.mode-terminal .cmp-kpi-v { font-family:'Courier New',monospace; }
+    #cmpOverlay.mode-terminal #cmpPanel0 .cmp-kpi-v { color:#2fa874; }
+    #cmpOverlay.mode-terminal #cmpPanel1 .cmp-kpi-v { color:#6ba4d4; }
+    #cmpOverlay.mode-terminal .cmp-kpi-lbl { color:rgba(47,168,116,.5); }
+    #cmpOverlay.mode-terminal #cmpPanel1 .cmp-kpi-lbl { color:rgba(107,164,212,.5); }
+    #cmpOverlay.mode-terminal .cmp-entity-head { border-color:rgba(47,168,116,.1); }
+    #cmpOverlay.mode-terminal .cmp-sec-lbl { color:rgba(47,168,116,.4); }
+    #cmpOverlay.mode-terminal #cmpPanel1 .cmp-sec-lbl { color:rgba(107,164,212,.4); }
+    #cmpOverlay.mode-terminal .cmp-sec-lbl::after { background:rgba(47,168,116,.08); }
+    #cmpOverlay.mode-terminal #cmpPanel1 .cmp-sec-lbl::after { background:rgba(107,164,212,.08); }
+    #cmpOverlay.mode-terminal .cmp-divider-v { background:linear-gradient(to bottom,transparent,rgba(47,168,116,.15) 20%,rgba(47,168,116,.15) 80%,transparent); }
+    /* ── DUELO MODE ── */
+    #cmpOverlay.mode-duelo #cmpPanel0 { background:rgba(182,157,116,.02); }
+    #cmpOverlay.mode-duelo #cmpPanel1 { background:rgba(49,116,184,.02); }
+    #cmpOverlay.mode-duelo #cmpPanel0 .cmp-entity-head { border-color:rgba(182,157,116,.15); }
+    #cmpOverlay.mode-duelo #cmpPanel1 .cmp-entity-head { border-color:rgba(49,116,184,.15); }
+    .cmp-win-tag { font-size:10px; margin-left:auto; padding:1px 6px; border-radius:8px; font-weight:700; }
+    .cmp-win-tag.a { background:rgba(182,157,116,.18); color:#b69d74; }
+    .cmp-win-tag.b { background:rgba(49,116,184,.18); color:#6ba4d4; }
+    .cmp-win-tag.tie { background:rgba(255,255,255,.06); color:#3a4558; }
+    #cmpDueloScore {
+      display:none; align-items:center; justify-content:center; gap:18px;
+      padding:10px 0 0; font-size:11px; color:#3a4558;
+    }
+    .cmp-dscore-val { font-size:22px; font-weight:800; line-height:1; }
+    /* ── DELTA MODE ── */
+    #cmpDeltaWrap {
+      flex:1; overflow-y:auto; padding:0;
+    }
+    #cmpDeltaWrap::-webkit-scrollbar { width:3px; }
+    #cmpDeltaWrap::-webkit-scrollbar-thumb { background:rgba(255,255,255,.07); }
+    .cmp-delta-score { display:flex; align-items:center; justify-content:space-between; padding:14px 28px 8px; flex-shrink:0; }
+    .cmp-delta-score-val { font-size:28px; font-weight:800; line-height:1; }
+    .cmp-delta-score-lbl { font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:#1e2840; margin-top:2px; }
+    .cmp-delta-hdr { display:grid; grid-template-columns:140px 1fr 1fr 1fr 60px; padding:8px 28px; border-bottom:1px solid rgba(255,255,255,.04); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#1e2840; }
+    .cmp-delta-row { display:grid; grid-template-columns:140px 1fr 1fr 1fr 60px; align-items:center; padding:9px 28px; border-bottom:1px solid rgba(255,255,255,.025); transition:background .12s; }
+    .cmp-delta-row:hover { background:rgba(255,255,255,.02); }
+    .cmp-delta-metric { font-size:11px; color:#3a4558; }
+    .cmp-delta-val { font-family:'DM Mono',monospace; font-size:12.5px; color:#c8d0e0; font-weight:600; }
+    .cmp-delta-diff-col { font-size:10.5px; font-weight:700; font-family:'DM Mono',monospace; }
+    .cmp-delta-diff-col.pos { color:#2fa874; } .cmp-delta-diff-col.neg { color:#d94141; } .cmp-delta-diff-col.neu { color:#3a4558; }
+    .cmp-delta-win-col { text-align:center; font-size:12px; }
+    /* ── PREMIUM MODE ── */
+    .cmp-strength-wrap { padding:12px 28px 0; flex-shrink:0; }
+    .cmp-strength-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .cmp-strength-nm { font-size:10px; font-weight:700; }
+    .cmp-strength-nm.a { color:#b69d74; } .cmp-strength-nm.b { color:#6ba4d4; }
+    .cmp-strength-sc { font-size:9px; color:#2d3748; }
+    .cmp-strength-track { height:5px; background:rgba(255,255,255,.04); border-radius:3px; overflow:hidden; }
+    .cmp-strength-fill { height:100%; border-radius:3px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+    #cmpOverlay.mode-premium .cmp-kpi { border-radius:12px; transition:transform .15s,border-color .15s; }
+    #cmpOverlay.mode-premium .cmp-kpi:hover { transform:translateY(-2px); border-color:rgba(255,255,255,.12); }
+    #cmpOverlay.mode-premium #cmpPanel0 .cmp-avatar { box-shadow:0 0 20px rgba(182,157,116,.2); }
+    #cmpOverlay.mode-premium #cmpPanel1 .cmp-avatar { box-shadow:0 0 20px rgba(49,116,184,.2); }
+
+    /* ── STREET FIGHTER MODE ─────────────────────────────── */
+    #cmpOverlay.mode-sf { background:#0a0008; }
+    #cmpOverlay.mode-sf #cmpBar { background:#120010; border-bottom:2px solid #ff003c; }
+    #cmpOverlay.mode-sf #cmpModeBar { background:#0f000d; border-bottom:2px solid #ff003c; }
+    #cmpSfWrap {
+      width:100%; display:flex; flex-direction:column; align-items:center;
+      background:radial-gradient(ellipse at 50% 30%,#1a0015 0%,#050008 100%);
+      position:relative; overflow:hidden; padding:0 0 24px;
+    }
+    #cmpSfWrap::before {
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,0,60,.03) 3px,rgba(255,0,60,.03) 4px);
+    }
+    .sf-arena {
+      width:100%; display:flex; justify-content:space-between; align-items:flex-end;
+      padding:0 32px; gap:0; position:relative;
+    }
+    .sf-fighter {
+      display:flex; flex-direction:column; align-items:center; gap:6px; z-index:2;
+    }
+    .sf-hb-wrap {
+      width:240px; display:flex; flex-direction:column; gap:4px;
+    }
+    .sf-hb-wrap.right { align-items:flex-end; }
+    .sf-hb-label {
+      font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .sf-hb-label.a { color:#ffcd00; text-shadow:0 0 8px #ffcd00; text-align:left; }
+    .sf-hb-label.b { color:#00cfff; text-shadow:0 0 8px #00cfff; text-align:right; }
+    .sf-hb-track {
+      height:18px; background:#111; border:2px solid #333;
+      border-radius:2px; overflow:hidden; position:relative;
+    }
+    .sf-hb-fill {
+      height:100%; border-radius:1px;
+      transition:width .8s cubic-bezier(.4,0,.2,1);
+    }
+    .sf-hb-fill.a { background:linear-gradient(90deg,#ff0000,#ffcd00 60%,#00ff44); float:left; }
+    .sf-hb-fill.b { background:linear-gradient(270deg,#ff0000,#00cfff 60%,#00ff44); float:right; }
+    .sf-portrait {
+      width:100px; height:100px; border-radius:4px; display:flex; align-items:center;
+      justify-content:center; font-size:42px; border:3px solid; position:relative;
+      image-rendering:pixelated;
+    }
+    .sf-portrait.a { border-color:#ffcd00; box-shadow:0 0 18px rgba(255,205,0,.5),inset 0 0 20px rgba(255,205,0,.08); background:#12000e; }
+    .sf-portrait.b { border-color:#00cfff; box-shadow:0 0 18px rgba(0,207,255,.5),inset 0 0 20px rgba(0,207,255,.08); background:#00020e; }
+    .sf-portrait::after {
+      content:''; position:absolute; inset:0;
+      background:repeating-linear-gradient(0deg,transparent,transparent 5px,rgba(255,255,255,.025) 5px,rgba(255,255,255,.025) 6px);
+      border-radius:2px;
+    }
+    .sf-vs-wrap {
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      z-index:10;
+    }
+    .sf-vs {
+      font-family:'Courier New',monospace; font-size:36px; font-weight:900;
+      color:#fff; letter-spacing:.05em; text-shadow:0 0 20px #ff003c, 2px 2px 0 #ff003c,-2px -2px 0 #990022;
+      animation:sfVsPulse 1s ease-in-out infinite;
+    }
+    @keyframes sfVsPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+    .sf-name {
+      font-family:'Courier New',monospace; font-size:10px; font-weight:700;
+      letter-spacing:.14em; text-transform:uppercase; text-align:center; margin-top:4px;
+    }
+    .sf-name.a { color:#ffcd00; text-shadow:0 0 6px #ffcd00; }
+    .sf-name.b { color:#00cfff; text-shadow:0 0 6px #00cfff; }
+    .sf-fight-word {
+      font-family:'Courier New',monospace; font-size:28px; font-weight:900;
+      text-transform:uppercase; letter-spacing:.18em; margin:12px 0 0;
+      animation:sfFight .6s steps(1) infinite;
+    }
+    @keyframes sfFight { 0%{color:#ff003c;text-shadow:0 0 12px #ff003c} 33%{color:#ffcd00;text-shadow:0 0 12px #ffcd00} 66%{color:#00cfff;text-shadow:0 0 12px #00cfff} 100%{color:#ff003c;text-shadow:0 0 12px #ff003c} }
+    .sf-stats-wrap {
+      width:100%; padding:0 32px; display:grid; grid-template-columns:1fr 1fr; gap:6px 32px; margin-top:16px;
+    }
+    .sf-stat-row {
+      display:flex; flex-direction:column; gap:3px; padding:6px 0;
+      border-bottom:1px solid rgba(255,255,255,.05);
+    }
+    .sf-stat-label {
+      font-family:'Courier New',monospace; font-size:9px; color:#666;
+      letter-spacing:.1em; text-transform:uppercase;
+    }
+    .sf-stat-bar-wrap { height:8px; background:#1a1a1a; border-radius:1px; overflow:hidden; display:flex; }
+    .sf-stat-fill-a { height:100%; background:linear-gradient(90deg,#ffcd0088,#ffcd00); border-radius:1px 0 0 1px; transition:width .6s; }
+    .sf-stat-fill-b { height:100%; background:linear-gradient(90deg,#00cfff,#00cfff88); border-radius:0 1px 1px 0; transition:width .6s; }
+    .sf-stat-vals { display:flex; justify-content:space-between; font-size:9px; margin-top:2px; }
+    .sf-stat-vals .av { color:#ffcd00; font-weight:700; }
+    .sf-stat-vals .bv { color:#00cfff; font-weight:700; }
+    .sf-stat-vals .lbl { color:#555; font-size:8px; text-transform:uppercase; letter-spacing:.06em; }
+    .sf-winner-banner {
+      font-family:'Courier New',monospace; font-size:13px; font-weight:900;
+      letter-spacing:.18em; text-transform:uppercase; text-align:center;
+      padding:8px 32px; margin-top:10px;
+      animation:sfWin 1s steps(1) infinite;
+    }
+    @keyframes sfWin { 0%{color:#ffcd00;text-shadow:0 0 16px #ffcd00} 50%{color:#fff;text-shadow:0 0 4px #fff} 100%{color:#ffcd00;text-shadow:0 0 16px #ffcd00} }
+    .sf-ko { font-size:10px; letter-spacing:.2em; color:#ff003c; animation:sfFight .4s steps(1) infinite; font-weight:700; margin-top:2px; display:block; }
+  `;
+  const st = document.createElement('style'); st.textContent = _css; document.head.appendChild(st);
+
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="cmpOverlay">
+      <div id="cmpBar">
+        <div class="cmp-slot" id="cmpSlot0">
+          <div class="cmp-slot-letter" style="background:#b69d74">A</div>
+          <input class="cmp-slot-inp" id="cmpInp0" placeholder="Emissor A…" autocomplete="off" spellcheck="false"/>
+          <span class="cmp-slot-status gray" id="cmpSt0">—</span>
+          <div class="cmp-dd" id="cmpDd0" style="display:none"></div>
+        </div>
+        <div class="cmp-vs">vs</div>
+        <div class="cmp-slot" id="cmpSlot1">
+          <div class="cmp-slot-letter" style="background:#3174b8">B</div>
+          <input class="cmp-slot-inp" id="cmpInp1" placeholder="Emissor B…" autocomplete="off" spellcheck="false"/>
+          <span class="cmp-slot-status gray" id="cmpSt1">—</span>
+          <div class="cmp-dd" id="cmpDd1" style="display:none"></div>
+        </div>
+        <button id="cmpCloseBtn" onclick="closeCmp()">✕</button>
+      </div>
+      <div id="cmpModeBar">
+        <span id="cmpModeLbl">Modo</span>
+        <div id="cmpModeTrack">
+          <div class="cmp-mode-seg active" data-mode="1">Duelo</div>
+        </div>
+      </div>
+      <div id="cmpBody">
+        <div class="cmp-panel" id="cmpPanel0">
+          <div class="cmp-empty-state"><div class="cmp-empty-letter">A</div><div style="font-size:12px">Digite um emissor acima</div></div>
+        </div>
+        <div class="cmp-divider-v" id="cmpDividerV"></div>
+        <div class="cmp-panel" id="cmpPanel1">
+          <div class="cmp-empty-state"><div class="cmp-empty-letter">B</div><div style="font-size:12px">Digite um emissor acima</div></div>
+        </div>
+      </div>
+      <div id="cmpFoot">
+        <span>Ctrl+Shift+C · ESC para fechar</span>
+        <span id="cmpFootMode">Duelo — Confronto direto</span>
+      </div>
+    </div>
+  `);
+
+  const COLOR = ['#b69d74','#3174b8'];
+
+  function _bc(s) {
+    if (!s) return 'gray';
+    const l = s.toLowerCase();
+    return l==='aprovado'?'green':l==='reprovado'?'red':(l.includes('nálise')||l==='watch'||l==='monitoramento')?'gold':'gray';
+  }
+  function _fmM(v) {
+    if (!v||isNaN(v)) return '—';
+    return v>=1e9?'R$'+(v/1e9).toFixed(1)+'B':v>=1e6?'R$'+(v/1e6).toFixed(0)+'M':'R$'+(v/1e3).toFixed(0)+'K';
+  }
+  function _lv(arr) { return Array.isArray(arr)&&arr.length?arr[arr.length-1]:null; }
+
+  function _allNames() {
+    const c = (typeof RANK_CORP!=='undefined'?RANK_CORP:[]).map(r=>r.empresa);
+    const b = (typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[]).map(r=>r.empresa);
+    return [...new Set([...c,...b])].filter(Boolean).sort();
+  }
+
+  function _showDd(idx, q) {
+    const dd = document.getElementById('cmpDd'+idx);
+    if (!q) { dd.style.display='none'; return; }
+    const hits = _allNames().filter(n=>n.toLowerCase().includes(q.toLowerCase())).slice(0,14);
+    if (!hits.length) { dd.style.display='none'; return; }
+    const corps = typeof RANK_CORP!=='undefined'?RANK_CORP:[];
+    const banks = typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[];
+    dd.innerHTML = hits.map(n=>{
+      const r = corps.find(x=>x.empresa===n)||banks.find(x=>x.empresa===n)||{};
+      const tag = corps.find(x=>x.empresa===n)?'Corp':'Banco';
+      return `<div class="cmp-dd-row" onmousedown="_cmpPick(${idx},'${n.replace(/'/g,"\\'")}')">
+        <div class="cmp-dd-name">${n}</div>
+        <div class="cmp-dd-tag">${tag}</div>
+        <span class="cmp-slot-status ${_bc(r.status)}" style="font-size:9px;padding:1px 7px">${r.status||'—'}</span>
+      </div>`;
+    }).join('');
+    dd.style.display = 'block';
+  }
+
+  function _renderPanel(idx, nome) {
+    const corps = typeof RANK_CORP!=='undefined'?RANK_CORP:[];
+    const banks = typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[];
+    const fins  = typeof FIN_SERIES!=='undefined'?FIN_SERIES:{};
+    const ativos= typeof ATIVOS!=='undefined'?ATIVOS:[];
+    const col   = COLOR[idx];
+    const ri    = corps.find(r=>r.empresa===nome)||banks.find(r=>r.empresa===nome)||{};
+    const isBank= !!banks.find(r=>r.empresa===nome);
+    const bcbD  = typeof _bcbLookup==='function'?_bcbLookup(nome):undefined;
+    const finKey= typeof _matchToFin==='function'?_matchToFin(nome):nome;
+    const fin   = (finKey&&fins[finKey]) ? fins[finKey] : (fins[nome]||null);
+    const pos   = ativos.filter(a=>a.emissor===nome&&(a.saldo||0)>0);
+    const totPos= pos.reduce((s,a)=>s+(a.saldo||0),0);
+    const bc    = _bc(ri.status);
+
+    let h = `
+      <div class="cmp-entity-head">
+        <div class="cmp-avatar" style="background:${col}18;color:${col}">${nome.substring(0,2).toUpperCase()}</div>
+        <div>
+          <div class="cmp-ename">${nome}</div>
+          <div class="cmp-emeta">${ri.setor||(isBank?'Banco':'Corporativo')}
+            &nbsp;·&nbsp;Rating Douro: <b style="color:#c8d0e0">${ri.ratingDouro||'—'}</b>
+            &nbsp;·&nbsp;Mkt: ${ri.ratingMkt||'—'}</div>
+          <span class="cmp-slot-status ${bc}" style="margin-top:6px;display:inline-block">${ri.status||'—'}</span>
+        </div>
+      </div>`;
+
+    if (isBank && bcbD) {
+      const bas=_lv(bcbD.basileia), roe=_lv(bcbD.roe), pdd=_lv(bcbD.inadimpl), efi=_lv(bcbD.eficiencia), nim=_lv(bcbD.nim);
+      h += `<div class="cmp-sec-lbl">Indicadores BCB</div>
+      <div class="cmp-kpis">
+        <div class="cmp-kpi"><div class="cmp-kpi-lbl">Basileia</div><div class="cmp-kpi-v ${bas!=null&&bas<11?'r':bas!=null&&bas>14?'g':''}">${bas!=null?Number(bas).toFixed(1)+'%':'—'}</div></div>
+        <div class="cmp-kpi"><div class="cmp-kpi-lbl">ROE</div><div class="cmp-kpi-v ${roe!=null&&roe>15?'g':roe!=null&&roe<8?'r':''}">${roe!=null?Number(roe).toFixed(1)+'%':'—'}</div></div>
+        <div class="cmp-kpi"><div class="cmp-kpi-lbl">Cob. PDD</div><div class="cmp-kpi-v">${pdd!=null?Number(pdd).toFixed(1)+'%':'—'}</div></div>
+        <div class="cmp-kpi"><div class="cmp-kpi-lbl">Eficiência</div><div class="cmp-kpi-v ${efi!=null&&efi<45?'g':efi!=null&&efi>65?'r':''}">${efi!=null?Number(efi).toFixed(1)+'%':'—'}</div></div>
+        <div class="cmp-kpi"><div class="cmp-kpi-lbl">NIM</div><div class="cmp-kpi-v">${nim!=null?Number(nim).toFixed(1)+'%':'—'}</div></div>
+        <div class="cmp-kpi"><div class="cmp-kpi-lbl">Anos</div><div class="cmp-kpi-v" style="font-size:13px">${(bcbD.anos||[]).join(', ')||'—'}</div></div>
+      </div>`;
+    } else if (fin) {
+      const kpis = [
+        ['Receita TTM',     _lv(fin['Receita_TTM']),        'M', false],
+        ['EBITDA TTM',      _lv(fin['EBITDA_TTM']),         'M', false],
+        ['Mg EBITDA',       _lv(fin['Mg EBITDA TTM']),      '%', false],
+        ['Dív.Liq/EBITDA',  _lv(fin['DivLiquida/EBITDA']),  'x', true],
+        ['ROE',             _lv(fin['ROE']),                 '%', false],
+        ['ROIC',            _lv(fin['ROIC']),                '%', false],
+        ['FCF TTM',         _lv(fin['FCF_TTM']),             'M', false],
+        ['Liq. Corrente',   _lv(fin['Liquidez Corrente']),   'x', false],
+        ['Dív.Bruta/EBITDA',_lv(fin['DivBruta_EBITDA']),    'x', true],
+        ['Mg Líquida',      _lv(fin['Mg Liquida TTM']),      '%', false],
+      ];
+      h += `<div class="cmp-sec-lbl">Fundamentos Financeiros</div><div class="cmp-kpis">`;
+      kpis.forEach(([lbl,val,unit,inv])=>{
+        const n = parseFloat(val);
+        let cls = '';
+        if (!isNaN(n)) {
+          if (unit==='%') cls = n>12?'g':n<0?'r':'';
+          if (unit==='x'&&inv) cls = n>4?'r':n<2?'g':'';
+        }
+        const disp = isNaN(n)||val==null?'—':unit==='M'?_fmM(n*1e6):n.toFixed(1)+unit;
+        h += `<div class="cmp-kpi"><div class="cmp-kpi-lbl">${lbl}</div><div class="cmp-kpi-v ${cls}">${disp}</div></div>`;
+      });
+      h += `</div>`;
+      if (fin.datas&&fin.datas.length) {
+        h += `<div class="cmp-sec-lbl">Último balanço</div>
+        <div style="font-size:11px;color:#2d3748">${fin.datas[fin.datas.length-1]||'—'} · Setor: ${fin.setor||'—'}</div>`;
+      }
+    } else {
+      h += `<div style="color:#1a2030;font-size:12px;padding:8px 0 16px">Sem dados financeiros para este emissor.</div>`;
+    }
+
+    if (pos.length) {
+      h += `<div class="cmp-sec-lbl">Posições · ${_fmM(totPos)}</div><div class="cmp-pos-list">`;
+      pos.sort((a,b)=>(b.saldo||0)-(a.saldo||0)).slice(0,8).forEach(a=>{
+        h += `<div class="cmp-pos-row">
+          <div class="cmp-pos-name">${a['Ativo']||a['ativo']||'—'}</div>
+          <div style="display:flex;flex-direction:column;gap:1px;align-items:flex-end">
+            <span class="cmp-pos-cls" style="color:#3a5070">${a.carteira||a['Carteira']||'—'}</span>
+            <span class="cmp-pos-cls">${a['Classe']||a['classe']||''}</span>
+          </div>
+          <div class="cmp-pos-val">${_fmM(a.saldo||0)}</div>
+        </div>`;
+      });
+      h += `</div>`;
+    } else {
+      h += `<div style="color:#1a2030;font-size:11px;padding:6px 0">Sem posições abertas.</div>`;
+    }
+    document.getElementById('cmpPanel'+idx).innerHTML = h;
+    _cmpCache[idx] = {nome};
+    if (_cmpCache[0]&&_cmpCache[1]) _applyDuelo();
+  }
+
+  /* ── MODE ENGINE — DUELO ÚNICO ────────────────────────────────────────── */
+  let _cmpMode = 1;
+  const _cmpCache = {0:null, 1:null};
+
+  function _applyDuelo() {
+    if (!_cmpCache[0]||!_cmpCache[1]) return;
+    const d0 = document.getElementById('cmpPanel0');
+    const d1 = document.getElementById('cmpPanel1');
+    if (!d0||!d1) return;
+    const fins = typeof FIN_SERIES!=='undefined'?FIN_SERIES:{};
+    const _lv2 = arr=>Array.isArray(arr)&&arr.length?arr[arr.length-1]:null;
+    const METRICS = [
+      {k:'Receita_TTM',    lb:'Receita TTM',    inv:false},
+      {k:'EBITDA_TTM',     lb:'EBITDA TTM',     inv:false},
+      {k:'Mg EBITDA 36M',  lb:'Mg EBITDA',      inv:false},
+      {k:'DivLiquida/EBITDA',lb:'Dív/EBITDA',   inv:true},
+      {k:'ROE',            lb:'ROE',             inv:false},
+      {k:'Liquidez Corrente',lb:'Liq. Corrente', inv:false},
+    ];
+    let winsA=0,winsB=0;
+    const finA = fins[typeof _matchToFin==='function'?_matchToFin(_cmpCache[0].nome):_cmpCache[0].nome]||fins[_cmpCache[0].nome]||null;
+    const finB = fins[typeof _matchToFin==='function'?_matchToFin(_cmpCache[1].nome):_cmpCache[1].nome]||fins[_cmpCache[1].nome]||null;
+    if (!finA||!finB) return;
+    METRICS.forEach(({k,inv})=>{
+      const a=parseFloat(_lv2(finA[k])), b=parseFloat(_lv2(finB[k]));
+      if (isNaN(a)||isNaN(b)) return;
+      const aBetter=inv?(a<b):(a>b), bBetter=inv?(b<a):(b>a);
+      if (aBetter) winsA++; else if (bBetter) winsB++;
+    });
+    const scoreEl = document.getElementById('cmpDueloScore');
+    if (!scoreEl) {
+      const sc = document.createElement('div');
+      sc.id='cmpDueloScore';
+      sc.innerHTML = `<span class="cmp-dscore-val" style="color:#b69d74">${winsA}</span><span style="font-size:10px">métricas ganhas</span><span class="cmp-dscore-val" style="color:#6ba4d4">${winsB}</span>`;
+      document.getElementById('cmpBody').before(sc);
+    } else {
+      scoreEl.style.display='flex';
+      scoreEl.innerHTML = `<span class="cmp-dscore-val" style="color:#b69d74">${winsA}</span><span style="font-size:10px;color:#1e2840">métricas ganhas</span><span class="cmp-dscore-val" style="color:#6ba4d4">${winsB}</span>`;
+    }
+  }
+
+  /* _renderCombined removido — apenas modo DUELO */
+  function _renderCombined() { /* noop */ }
+  function _renderCombined_REMOVED() {
+    const fins = typeof FIN_SERIES!=='undefined'?FIN_SERIES:{};
+    const _lv2 = arr=>Array.isArray(arr)&&arr.length?arr[arr.length-1]:null;
+    const nA = _cmpCache[0].nome, nB = _cmpCache[1].nome;
+    const finA = fins[typeof _matchToFin==='function'?_matchToFin(nA):nA]||fins[nA]||{};
+    const finB = fins[typeof _matchToFin==='function'?_matchToFin(nB):nB]||fins[nB]||{};
+    const METRICS = [
+      {k:'Receita_TTM',    lb:'Receita TTM',     fmt:(v)=>`R$${(v/1e9).toFixed(1)}B`, inv:false, unit:'M'},
+      {k:'EBITDA_TTM',     lb:'EBITDA TTM',      fmt:(v)=>`R$${(v/1e9).toFixed(1)}B`, inv:false, unit:'M'},
+      {k:'Mg EBITDA 36M',  lb:'Mg EBITDA',       fmt:(v)=>`${(v*100).toFixed(1)}%`,   inv:false, unit:'%'},
+      {k:'DivLiquida/EBITDA',lb:'Dív/EBITDA',    fmt:(v)=>`${v.toFixed(1)}x`,         inv:true,  unit:'x'},
+      {k:'Estrutura de Capital (D/D+E)',lb:'Estr. Capital',fmt:(v)=>`${(v*100).toFixed(0)}%`,inv:true,unit:'%'},
+      {k:'ROE',            lb:'ROE',              fmt:(v)=>`${(v*100).toFixed(1)}%`,   inv:false, unit:'%'},
+      {k:'ROIC',           lb:'ROIC',             fmt:(v)=>`${(v*100).toFixed(1)}%`,   inv:false, unit:'%'},
+      {k:'Liquidez Corrente',lb:'Liq. Corrente',  fmt:(v)=>`${v.toFixed(1)}x`,         inv:false, unit:'x'},
+    ];
+    if (_cmpMode===2) {
+      // RADAR MODE
+      const body = document.getElementById('cmpBody');
+      body.innerHTML = `<div style="width:100%;display:flex;flex-direction:column;align-items:center;padding:20px">
+        <canvas id="cmpRadarChart" style="max-width:380px;max-height:380px"></canvas>
+        <div style="display:flex;gap:32px;margin-top:16px;font-size:11px">
+          <span style="color:#b69d74">● ${nA}</span><span style="color:#6ba4d4">● ${nB}</span>
+        </div>
+      </div>`;
+      const labels=[],dA=[],dB=[];
+      METRICS.forEach(({k,lb,inv})=>{
+        const a=parseFloat(_lv2(finA[k])),b=parseFloat(_lv2(finB[k]));
+        if(isNaN(a)||isNaN(b)) return;
+        labels.push(lb);
+        const mn=Math.min(a,b),mx=Math.max(a,b),rng=mx-mn||1;
+        const na=inv?(1-(a-mn)/rng):(a-mn)/rng;
+        const nb=inv?(1-(b-mn)/rng):(b-mn)/rng;
+        dA.push(+(na*100).toFixed(0)); dB.push(+(nb*100).toFixed(0));
+      });
+      if (typeof Chart!=='undefined'&&labels.length) {
+        new Chart(document.getElementById('cmpRadarChart'),{
+          type:'radar',
+          data:{labels,datasets:[
+            {label:nA,data:dA,borderColor:'#b69d74',backgroundColor:'rgba(182,157,116,.12)',borderWidth:2,pointBackgroundColor:'#b69d74'},
+            {label:nB,data:dB,borderColor:'#3174b8',backgroundColor:'rgba(49,116,184,.1)',borderWidth:2,pointBackgroundColor:'#3174b8'}
+          ]},
+          options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},
+            scales:{r:{ticks:{display:false,stepSize:25},grid:{color:'rgba(255,255,255,.06)'},pointLabels:{color:'#3a4558',font:{size:10}},angleLines:{color:'rgba(255,255,255,.05)'}}}}
+        });
+      }
+    } else if (_cmpMode===4) {
+      // DELTA MODE
+      const corps = typeof RANK_CORP!=='undefined'?RANK_CORP:[];
+      const banks = typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[];
+      const riA = corps.find(r=>r.empresa===nA)||banks.find(r=>r.empresa===nA)||{};
+      const riB = corps.find(r=>r.empresa===nB)||banks.find(r=>r.empresa===nB)||{};
+      let winsA=0,winsB=0,rows='';
+      METRICS.forEach(({k,lb,fmt,inv})=>{
+        const a=parseFloat(_lv2(finA[k])),b=parseFloat(_lv2(finB[k]));
+        if(isNaN(a)||isNaN(b)){rows+=`<div class="cmp-delta-row"><div class="cmp-delta-metric">${lb}</div><div class="cmp-delta-val" style="color:#1e2840">—</div><div class="cmp-delta-val" style="color:#1e2840">—</div><div class="cmp-delta-diff-col neu">—</div><div></div></div>`;return;}
+        const diff=b-a, pct=a!==0?((b-a)/Math.abs(a)*100):0;
+        const aBetter=inv?(a<b):(a>b), bBetter=inv?(b<a):(b>a);
+        if(aBetter)winsA++; else if(bBetter)winsB++;
+        const dCls=bBetter?'pos':aBetter?'neg':'neu';
+        const dStr=(diff>0?'+':'')+pct.toFixed(1)+'%';
+        const win=aBetter?`<span style="color:#b69d74">A</span>`:bBetter?`<span style="color:#6ba4d4">B</span>`:`<span style="color:#2d3748">—</span>`;
+        rows+=`<div class="cmp-delta-row"><div class="cmp-delta-metric">${lb}</div><div class="cmp-delta-val">${fmt(a)}</div><div class="cmp-delta-val">${fmt(b)}</div><div class="cmp-delta-diff-col ${dCls}">${dStr}</div><div class="cmp-delta-win-col">${win}</div></div>`;
+      });
+      document.getElementById('cmpBody').innerHTML = `
+        <div id="cmpDeltaWrap">
+          <div class="cmp-delta-score">
+            <div><div class="cmp-delta-score-val" style="color:#b69d74">${winsA}</div><div class="cmp-delta-score-lbl">${nA}</div></div>
+            <div style="font-size:11px;color:#1e2840;text-align:center">métricas<br>ganhas</div>
+            <div><div class="cmp-delta-score-val" style="color:#6ba4d4">${winsB}</div><div class="cmp-delta-score-lbl">${nB}</div></div>
+          </div>
+          <div class="cmp-delta-hdr"><div>Indicador</div><div>${nA.split(' ')[0]}</div><div>${nB.split(' ')[0]}</div><div>Δ %</div><div style="text-align:center">Vence</div></div>
+          ${rows}
+        </div>`;
+    } else if (_cmpMode===5) {
+      // PREMIUM: re-render both panels then add strength bar
+      [0,1].forEach(idx=>{ if (_cmpCache[idx]) _renderPanel(idx,_cmpCache[idx].nome); });
+      const corps = typeof RANK_CORP!=='undefined'?RANK_CORP:[];
+      const banks = typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[];
+      const riA = corps.find(r=>r.empresa===nA)||banks.find(r=>r.empresa===nA)||{};
+      const riB = corps.find(r=>r.empresa===nB)||banks.find(r=>r.empresa===nB)||{};
+      let winsA=0,winsB=0;
+      METRICS.forEach(({k,inv})=>{
+        const a=parseFloat(_lv2(finA[k])),b=parseFloat(_lv2(finB[k]));
+        if(isNaN(a)||isNaN(b)) return;
+        if(inv?(a<b):(a>b)) winsA++; else if(inv?(b<a):(b>a)) winsB++;
+      });
+      const total=winsA+winsB||1, pctA=Math.round(winsA/total*100);
+      const wrap = document.createElement('div');
+      wrap.className='cmp-strength-wrap';
+      wrap.innerHTML=`<div class="cmp-strength-top"><span class="cmp-strength-nm a">${nA.split(' ')[0]} · ${winsA} pts</span><span class="cmp-strength-sc">Força relativa</span><span class="cmp-strength-nm b">${nB.split(' ')[0]} · ${winsB} pts</span></div><div class="cmp-strength-track"><div class="cmp-strength-fill" style="width:${pctA}%;background:linear-gradient(90deg,#b69d74,#3174b8)"></div></div>`;
+      document.getElementById('cmpBody').before(wrap);
+    } else if (_cmpMode===6) {
+      // STREET FIGHTER MODE
+      const corps = typeof RANK_CORP!=='undefined'?RANK_CORP:[];
+      const banks = typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[];
+      const riA = corps.find(r=>r.empresa===nA)||banks.find(r=>r.empresa===nA)||{};
+      const riB = corps.find(r=>r.empresa===nB)||banks.find(r=>r.empresa===nB)||{};
+      let winsA=0,winsB=0;
+      const sfMetrics=[];
+      METRICS.forEach(({k,lb,fmt,inv})=>{
+        const a=parseFloat(_lv2(finA[k])),b=parseFloat(_lv2(finB[k]));
+        if(isNaN(a)||isNaN(b)){sfMetrics.push({lb,aVal:'—',bVal:'—',pctA:50,pctB:50,aBetter:false,bBetter:false});return;}
+        const aBetter=inv?(a<b):(a>b), bBetter=inv?(b<a):(b>a);
+        if(aBetter)winsA++; else if(bBetter)winsB++;
+        const mn=Math.min(a,b),mx=Math.max(a,b),rng=mx-mn||1;
+        const na=inv?(1-(a-mn)/rng):(a-mn)/rng;
+        const nb=inv?(1-(b-mn)/rng):(b-mn)/rng;
+        const sum=na+nb||1;
+        sfMetrics.push({lb,aVal:fmt(a),bVal:fmt(b),pctA:Math.round(na/sum*100),pctB:Math.round(nb/sum*100),aBetter,bBetter});
+      });
+      const total=winsA+winsB||1;
+      const hpA=Math.round(winsA/total*100), hpB=Math.round(winsB/total*100);
+      const winner=winsA>winsB?nA:winsB>winsA?nB:null;
+      const emojiA=['🏦','🏢','💰','📈','⚡'][Math.abs(nA.charCodeAt(0))%5];
+      const emojiB=['🏦','🏢','💰','📈','⚡'][Math.abs(nB.charCodeAt(0))%5];
+      const ratingA=riA.ratingDouro||riA.ratingMkt||'—';
+      const ratingB=riB.ratingDouro||riB.ratingMkt||'—';
+      const statusA=riA.status||'—', statusB=riB.status||'—';
+      let statsHtml='';
+      sfMetrics.forEach(({lb,aVal,bVal,pctA,pctB,aBetter,bBetter})=>{
+        statsHtml+=`<div class="sf-stat-row">
+          <div class="sf-stat-label">${lb}</div>
+          <div class="sf-stat-bar-wrap">
+            <div class="sf-stat-fill-a" style="width:${pctA}%"></div>
+            <div class="sf-stat-fill-b" style="width:${pctB}%"></div>
+          </div>
+          <div class="sf-stat-vals">
+            <span class="av"${aBetter?' style="text-shadow:0 0 6px #ffcd00"':''}>${aVal}</span>
+            <span class="lbl">${lb}</span>
+            <span class="bv"${bBetter?' style="text-shadow:0 0 6px #00cfff"':''}>${bVal}</span>
+          </div>
+        </div>`;
+      });
+      const winBanner=winner
+        ?`<div class="sf-winner-banner">${winner===nA?'<span style="color:#ffcd00">'+nA.split(' ')[0]+'</span>':'<span style="color:#00cfff">'+nB.split(' ')[0]+'</span>'} WINS!<br><span class="sf-ko">K.O.</span></div>`
+        :`<div class="sf-winner-banner" style="animation:none;color:#aaa">DRAW</div>`;
+      document.getElementById('cmpBody').innerHTML=`<div id="cmpSfWrap">
+        <div class="sf-fight-word">⚔ FIGHT!</div>
+        <div class="sf-arena" style="margin-top:12px">
+          <div class="sf-fighter">
+            <div class="sf-hb-wrap left">
+              <div class="sf-hb-label a">${nA.split(' ')[0]}</div>
+              <div class="sf-hb-track"><div class="sf-hb-fill a" style="width:${hpA}%"></div></div>
+              <div style="font-size:8px;color:#555;font-family:'Courier New',monospace;letter-spacing:.08em">HP ${hpA}% · ${winsA} wins · ${ratingA}</div>
+            </div>
+            <div class="sf-portrait a">${emojiA}</div>
+            <div class="sf-name a">${nA.split(' ')[0]}</div>
+            <div style="font-size:8px;color:#ffcd0066;font-family:'Courier New',monospace">${statusA.toUpperCase()}</div>
+          </div>
+          <div class="sf-vs-wrap"><div class="sf-vs">VS</div></div>
+          <div class="sf-fighter" style="align-items:flex-end">
+            <div class="sf-hb-wrap right">
+              <div class="sf-hb-label b">${nB.split(' ')[0]}</div>
+              <div class="sf-hb-track"><div class="sf-hb-fill b" style="width:${hpB}%;float:right"></div></div>
+              <div style="font-size:8px;color:#555;font-family:'Courier New',monospace;letter-spacing:.08em;text-align:right">HP ${hpB}% · ${winsB} wins · ${ratingB}</div>
+            </div>
+            <div class="sf-portrait b">${emojiB}</div>
+            <div class="sf-name b">${nB.split(' ')[0]}</div>
+            <div style="font-size:8px;color:#00cfff66;font-family:'Courier New',monospace">${statusB.toUpperCase()}</div>
+          </div>
+        </div>
+        ${winBanner}
+        <div class="sf-stats-wrap">${statsHtml}</div>
+      </div>`;
+    }
+  }
+
+  /* ── MODE SWITCHER INTERACTIONS ── */
+  (function() {
+    const track = document.getElementById('cmpModeTrack');
+    if (!track) return;
+    let dragging=false, startX=0, startMode=0;
+    const segs = ()=>document.querySelectorAll('.cmp-mode-seg');
+    const modeFromX = (x) => {
+      let best=0, bd=Infinity;
+      segs().forEach((el,i)=>{const r=el.getBoundingClientRect(),cx=r.left+r.width/2,d=Math.abs(x-cx);if(d<bd){bd=d;best=i;}});
+      return best;
+    };
+    track.addEventListener('mousedown', e=>{
+      dragging=true; startX=e.clientX; startMode=_cmpMode;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e=>{
+      if (!dragging) return;
+      const m=modeFromX(e.clientX);
+      _updateModeThumb(m);
+      document.querySelectorAll('.cmp-mode-seg').forEach((el,i)=>el.classList.toggle('active',i===m));
+    });
+    document.addEventListener('mouseup', e=>{
+      if (!dragging) return;
+      dragging=false;
+      _setMode(modeFromX(e.clientX));
+    });
+    track.addEventListener('click', e=>{
+      const seg=e.target.closest('.cmp-mode-seg');
+      if (seg) _setMode(parseInt(seg.dataset.mode));
+    });
+    // Touch support
+    track.addEventListener('touchstart', e=>{dragging=true;startX=e.touches[0].clientX;},{passive:true});
+    track.addEventListener('touchmove', e=>{
+      if (!dragging) return;
+      const m=modeFromX(e.touches[0].clientX);
+      _updateModeThumb(m);
+      document.querySelectorAll('.cmp-mode-seg').forEach((el,i)=>el.classList.toggle('active',i===m));
+    },{passive:true});
+    track.addEventListener('touchend', e=>{
+      if (!dragging) return;
+      dragging=false;
+      _setMode(modeFromX(e.changedTouches[0].clientX));
+    });
+    // Init thumb position
+    requestAnimationFrame(()=>_updateModeThumb(0));
+  })();
+
+  window._cmpPick = function(idx, nome) {
+    document.getElementById('cmpInp'+idx).value = nome;
+    document.getElementById('cmpDd'+idx).style.display = 'none';
+    const corps = typeof RANK_CORP!=='undefined'?RANK_CORP:[];
+    const banks = typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[];
+    const ri = corps.find(r=>r.empresa===nome)||banks.find(r=>r.empresa===nome)||{};
+    const st = document.getElementById('cmpSt'+idx);
+    st.textContent = ri.status||'—';
+    st.className = 'cmp-slot-status '+_bc(ri.status);
+    _renderPanel(idx, nome);
+  };
+
+  [0,1].forEach(idx=>{
+    document.getElementById('cmpInp'+idx).addEventListener('input', e=>_showDd(idx, e.target.value));
+    document.getElementById('cmpInp'+idx).addEventListener('keydown', e=>{
+      if (e.key==='Escape') document.getElementById('cmpDd'+idx).style.display='none';
+    });
+    document.getElementById('cmpInp'+idx).addEventListener('blur', ()=>{
+      setTimeout(()=>{ const dd=document.getElementById('cmpDd'+idx); if(dd) dd.style.display='none'; }, 200);
+    });
+  });
+
+  window.closeCmp = function() { document.getElementById('cmpOverlay').classList.remove('open'); };
+
+  document.addEventListener('keydown', e=>{
+    if (e.ctrlKey&&e.shiftKey&&e.key==='C') {
+      e.preventDefault();
+      const ov = document.getElementById('cmpOverlay');
+      if (ov.classList.contains('open')) closeCmp();
+      else { ov.classList.add('open'); setTimeout(()=>document.getElementById('cmpInp0').focus(), 60); }
+    }
+    if (e.key==='Escape') document.getElementById('cmpOverlay')?.classList.remove('open');
+  });
+})();
+
+// ── PAINEL DE DEBUG (Ctrl+Shift+D) ────────────────────────────────────────
+(function() {
+  const _css = `
+    #dbgOverlay {
+      display:none; position:fixed; inset:0; z-index:10001;
+      background:rgba(0,4,8,.92); backdrop-filter:blur(10px);
+      align-items:center; justify-content:center;
+      font-family:var(--font,'Montserrat',sans-serif);
+    }
+    #dbgOverlay.open { display:flex; animation:dbgPop .22s cubic-bezier(.16,1,.3,1); }
+    @keyframes dbgPop { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:none} }
+    #dbgMatrixCanvas {
+      position:absolute; inset:0; width:100%; height:100%;
+      opacity:.18; filter:blur(1.2px); pointer-events:none; z-index:0;
+    }
+    #dbgBox { position:relative; z-index:1; }
+    #dbgBox {
+      width:min(860px,96vw); max-height:87vh; overflow:hidden;
+      background:#030810;
+      border:1px solid rgba(47,168,116,.22);
+      border-radius:14px; display:flex; flex-direction:column;
+      box-shadow:0 0 60px rgba(47,168,116,.06), 0 0 0 1px rgba(47,168,116,.04), 0 40px 100px rgba(0,0,0,.9);
+    }
+    #dbgHead {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 22px; border-bottom:1px solid rgba(47,168,116,.1); flex-shrink:0;
+      background:rgba(47,168,116,.02);
+    }
+    #dbgTitle {
+      display:flex; align-items:center; gap:9px;
+      font-size:11px; font-weight:700; color:#1d7a55; letter-spacing:.14em; text-transform:uppercase;
+    }
+    .dbg-dot {
+      width:7px; height:7px; border-radius:50%; background:#2fa874;
+      box-shadow:0 0 8px #2fa874;
+      animation:dbgBlink 1.6s ease-in-out infinite;
+    }
+    @keyframes dbgBlink {
+      0%,100%{opacity:1;box-shadow:0 0 8px #2fa874} 50%{opacity:.3;box-shadow:none}
+    }
+    #dbgCloseBtn {
+      background:transparent; border:none; color:#0d4a28; font-size:18px;
+      cursor:pointer; padding:4px 8px; border-radius:5px; transition:color .15s;
+    }
+    #dbgCloseBtn:hover { color:#2fa874; }
+    #dbgScroll {
+      flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; gap:14px;
+    }
+    #dbgScroll::-webkit-scrollbar { width:3px; }
+    #dbgScroll::-webkit-scrollbar-thumb { background:rgba(47,168,116,.2); border-radius:2px; }
+    .dbg-row4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .dbg-tile {
+      background:rgba(47,168,116,.03); border:1px solid rgba(47,168,116,.1);
+      border-radius:9px; padding:11px 13px;
+    }
+    .dbg-tile-lbl { font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:#0d4a28; }
+    .dbg-tile-val { font-family:var(--mono,'monospace'); font-size:21px; font-weight:700; color:#2fa874; margin-top:5px; line-height:1; }
+    .dbg-tile-sub { font-size:9.5px; color:#0a2e1a; margin-top:2px; }
+    .dbg-card { border:1px solid rgba(47,168,116,.08); border-radius:9px; overflow:hidden; }
+    .dbg-card-hdr {
+      background:rgba(47,168,116,.03); padding:8px 15px;
+      font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:#0d4a28;
+      border-bottom:1px solid rgba(47,168,116,.07);
+    }
+    .dbg-tbl { width:100%; border-collapse:collapse; }
+    .dbg-tbl td { padding:6px 15px; font-size:11.5px; border-bottom:1px solid rgba(47,168,116,.04); vertical-align:middle; }
+    .dbg-tbl td:first-child { color:#1d5c3a; font-weight:600; width:38%; white-space:nowrap; display:table-cell; }
+    .dbg-tbl td:nth-child(2) { font-family:var(--mono,'monospace'); color:#2fa874; }
+    .dbg-tbl td:nth-child(3) { font-family:var(--mono,'monospace'); color:#2fa874; text-align:right; white-space:nowrap; }
+    .dbg-tbl td:last-child  { font-family:var(--mono,'monospace'); color:#2fa874; }
+    .dbg-tbl tr:last-child td { border-bottom:none; }
+    .dbg-log-wrap { padding:10px 15px; max-height:160px; overflow-y:auto; }
+    .dbg-log-wrap::-webkit-scrollbar { width:2px; }
+    .dbg-log-wrap::-webkit-scrollbar-thumb { background:rgba(47,168,116,.15); }
+    .dbg-log-line { display:flex; gap:10px; font-size:10.5px; line-height:1.8; }
+    .dbg-log-ts  { color:#052a14; flex-shrink:0; font-family:var(--mono,'monospace'); }
+    .dbg-log-msg { color:#1d7a55; font-family:var(--mono,'monospace'); }
+    .dbg-log-msg.w { color:#b69d74; }
+    #dbgFoot {
+      padding:8px 22px; border-top:1px solid rgba(47,168,116,.07); flex-shrink:0;
+      display:flex; justify-content:space-between;
+      font-size:9.5px; color:#052a14; font-family:var(--mono,'monospace');
+    }
+  `;
+  const st = document.createElement('style'); st.textContent = _css; document.head.appendChild(st);
+
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="dbgOverlay">
+      <canvas id="dbgMatrixCanvas"></canvas>
+      <div id="dbgBox">
+        <div id="dbgHead">
+          <div id="dbgTitle"><div class="dbg-dot"></div>SYSTEM DIAGNOSTICS</div>
+          <button id="dbgCloseBtn" onclick="closeDbg()">&#x2715;</button>
+        </div>
+        <div id="dbgScroll"></div>
+        <div id="dbgFoot"><span id="dbgTs"></span><span>Ctrl+Shift+D para fechar</span></div>
+      </div>
+    </div>
+  `);
+
+  const _logs = [];
+  const _origLog = console.log.bind(console);
+  console.log = function(...a) {
+    _origLog(...a);
+    const msg = a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' ');
+    _logs.push({ts: new Date().toLocaleTimeString('pt-BR'), msg, w: msg.toLowerCase().includes('erro')||msg.toLowerCase().includes('falha')});
+    if (_logs.length > 60) _logs.shift();
+  };
+
+  function _fmM(v) {
+    if (!v||isNaN(v)) return '—';
+    return v>=1e9?'R$'+(v/1e9).toFixed(1)+'B':v>=1e6?'R$'+(v/1e6).toFixed(0)+'M':'R$'+(v/1e3).toFixed(0)+'K';
+  }
+
+  function _fmAge(h) {
+    if (h < 0)   return {txt:'—', cls:''};
+    if (h < 1)   return {txt:'há menos de 1h', cls:'g'};
+    if (h < 6)   return {txt:`há ${h}h`, cls:'g'};
+    if (h < 24)  return {txt:`há ${h}h`, cls:''};
+    if (h < 48)  return {txt:`há ${Math.floor(h/24)}d`, cls:'o'};
+    return       {txt:`há ${Math.floor(h/24)}d`, cls:'r'};
+  }
+
+  function _build() {
+    const at  = typeof ATIVOS!=='undefined'?ATIVOS:[];
+    const rc  = typeof RANK_CORP!=='undefined'?RANK_CORP:[];
+    const rb  = typeof RANK_BANCOS!=='undefined'?RANK_BANCOS:[];
+    const fs  = typeof FIN_SERIES!=='undefined'?FIN_SERIES:{};
+    const bk  = typeof _BCB_DATA!=='undefined'?_BCB_DATA:{};
+    const bl  = typeof BCB_LIVE!=='undefined'?BCB_LIVE:{};
+    const nd  = typeof NEWS_DATA!=='undefined'?(NEWS_DATA.noticias||[]).length:0;
+    const pl  = typeof PL_TOTAL!=='undefined'?PL_TOTAL:0;
+    const bi  = typeof BUILD_INFO!=='undefined'?BUILD_INFO:{};
+    const tc  = at.filter(a=>(a.saldo||0)>0).reduce((s,a)=>s+(a.saldo||0),0);
+    const fsK = Object.keys(fs).length;
+    const bkK = Object.keys(bk).length;
+    const blK = Object.keys(bl).length;
+
+    document.getElementById('dbgTs').textContent = 'Snapshot ' + new Date().toLocaleTimeString('pt-BR');
+
+    // ── Card de timestamps ──────────────────────────────────────────────────
+    const isDadosVivos = bi.dados_vivos;
+    const modoNum = bi.modo_num || '?';
+    const modoCor = modoNum==='1' ? '#2fa874' : modoNum==='3' ? '#b69d74' : '#3174b8';
+    const modoIcon = modoNum==='1'
+      ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
+      : modoNum==='3'
+      ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+      : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
+
+    // bloco principal: geração do HTML
+    const geradoAge = _fmAge(
+      bi.arquivos&&bi.arquivos.length
+        ? Math.min(...(bi.arquivos.filter(a=>a.ok).map(a=>a.horas).filter(h=>h>=0)))
+        : -1
+    );
+
+    const mainLabel = isDadosVivos
+      ? 'Geração do HTML (dados ao vivo — Modo 1)'
+      : 'Geração do HTML (dados locais — Modo 3)';
+    const mainSub = isDadosVivos
+      ? 'Comdinheiro + CVM buscados ao rodar o script'
+      : 'Comdinheiro NÃO consultado · dados das planilhas locais';
+
+    // arquivos rastreados
+    const arqRows = (bi.arquivos||[]).map(a => {
+      const age = _fmAge(a.horas);
+      const dotCls = !a.ok ? 'r' : a.horas < 0 ? '' : a.horas < 6 ? 'g' : a.horas < 48 ? 'o' : 'r';
+      const dotColor = dotCls==='g'?'#2fa874':dotCls==='o'?'#b69d74':dotCls==='r'?'#d94141':'#2d3748';
+      return `<tr>
+        <td style="display:flex;align-items:center;gap:7px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:${dotColor};flex-shrink:0;display:inline-block;${dotCls==='g'?'box-shadow:0 0 5px '+dotColor+';':''}"></span>
+          ${a.nome}
+        </td>
+        <td>${a.ok?a.ts:'<span style="color:#d94141">não encontrado</span>'}</td>
+        <td style="color:${dotColor};font-size:10px;white-space:nowrap;">${a.ok?age.txt:'—'}</td>
+      </tr>`;
+    }).join('');
+
+    const isOld = (bi.arquivos||[]).some(a=>a.ok&&a.horas>72);
+    const alertHtml = isOld
+      ? `<div style="display:flex;align-items:center;gap:8px;background:rgba(217,65,65,.06);border:1px solid rgba(217,65,65,.2);border-radius:7px;padding:8px 12px;margin-top:2px;">
+           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d94141" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+           <span style="font-size:10px;color:#d94141;">Uma ou mais planilhas de base estão desatualizadas (mais de 72h). Considere reabrir e salvar.</span>
+         </div>`
+      : '';
+
+    const logHtml = _logs.length
+      ? [..._logs].reverse().map(l=>`<div class="dbg-log-line"><span class="dbg-log-ts">${l.ts}</span><span class="dbg-log-msg${l.w?' w':''}">${l.msg}</span></div>`).join('')
+      : '<span style="color:#052a14;font-size:10px">Nenhum log capturado ainda.</span>';
+
+    document.getElementById('dbgScroll').innerHTML = `
+      <div class="dbg-row4">
+        <div class="dbg-tile"><div class="dbg-tile-lbl">Ativos</div><div class="dbg-tile-val">${at.length}</div><div class="dbg-tile-sub">Carteira: ${_fmM(tc)}</div></div>
+        <div class="dbg-tile"><div class="dbg-tile-lbl">Corp. Rank</div><div class="dbg-tile-val">${rc.length}</div><div class="dbg-tile-sub">FIN_SERIES: ${fsK} emp.</div></div>
+        <div class="dbg-tile"><div class="dbg-tile-lbl">Bancos BCB</div><div class="dbg-tile-val">${blK}</div><div class="dbg-tile-sub">_BCB_DATA: ${bkK} total</div></div>
+        <div class="dbg-tile"><div class="dbg-tile-lbl">Notícias</div><div class="dbg-tile-val">${nd}</div><div class="dbg-tile-sub">PL: ${_fmM(pl)}</div></div>
+      </div>
+
+      <div class="dbg-card">
+        <div class="dbg-card-hdr" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Última Atualização dos Dados</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:5px;padding:2px 9px;font-size:9px;color:${modoCor};">
+            ${modoIcon}&nbsp;Modo ${modoNum} · ${bi.modo||'—'}
+          </span>
+        </div>
+        <div style="padding:12px 15px;display:flex;flex-direction:column;gap:10px;">
+
+          <!-- Geração do HTML -->
+          <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 12px;background:rgba(47,168,116,.04);border:1px solid rgba(47,168,116,.12);border-radius:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#2fa874;box-shadow:0 0 7px #2fa874;flex-shrink:0;margin-top:3px;"></div>
+            <div style="flex:1;">
+              <div style="font-size:9.5px;font-weight:700;color:#1d7a55;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;">${mainLabel}</div>
+              <div style="font-family:var(--mono,'monospace');font-size:15px;font-weight:700;color:#2fa874;">${bi.gerado_em||'—'}</div>
+              <div style="font-size:9.5px;color:#0a2e1a;margin-top:3px;">${mainSub}</div>
+            </div>
+          </div>
+
+          <!-- Planilhas de base -->
+          <div>
+            <div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0d4a28;margin-bottom:7px;">
+              ${isDadosVivos ? 'Planilhas de Referência (Scorecard · Watch List)' : 'Planilhas de Base (fonte dos dados neste build)'}
+            </div>
+            <table class="dbg-tbl" style="width:100%">
+              <colgroup><col style="width:44%"><col style="width:34%"><col style="width:22%"></colgroup>
+              ${arqRows||'<tr><td colspan="3" style="color:#052a14">Nenhum arquivo rastreado.</td></tr>'}
+            </table>
+            ${alertHtml}
+          </div>
+
+        </div>
+      </div>
+
+      <div class="dbg-card">
+        <div class="dbg-card-hdr">Variáveis Injetadas pelo Python</div>
+        <table class="dbg-tbl">
+          <tr><td>ATIVOS</td><td>${at.length} registros · ${new Set(at.map(a=>a.emissor).filter(Boolean)).size} emissores únicos</td></tr>
+          <tr><td>FIN_SERIES</td><td>${fsK} empresas com séries financeiras</td></tr>
+          <tr><td>RANK_CORP</td><td>${rc.length} emissores corporativos</td></tr>
+          <tr><td>RANK_BANCOS</td><td>${rb.length} bancos no ranking</td></tr>
+          <tr><td>BCB_LIVE</td><td>${blK} bancos com dados ao vivo</td></tr>
+          <tr><td>NEWS_DATA</td><td>${nd} notícias curadas</td></tr>
+          <tr><td>PL_TOTAL</td><td>${_fmM(pl)}</td></tr>
+          <tr><td>SPREADS_TS</td><td>${typeof SPREADS_TS!=='undefined'?SPREADS_TS.length+' pontos':'—'}</td></tr>
+          <tr><td>PERF_DATA</td><td>${typeof PERF_DATA!=='undefined'?JSON.stringify(PERF_DATA).length+' bytes':'—'}</td></tr>
+        </table>
+      </div>
+      <div class="dbg-card">
+        <div class="dbg-card-hdr">Log do Sistema (${_logs.length} entradas)</div>
+        <div class="dbg-log-wrap">${logHtml}</div>
+      </div>
+    `;
+  }
+
+  window.openDbg  = function() { _build(); document.getElementById('dbgOverlay').classList.add('open'); };
+  window.closeDbg = function() { document.getElementById('dbgOverlay').classList.remove('open'); };
+
+  // Matrix rain animation
+  (function() {
+    const cvs = document.getElementById('dbgMatrixCanvas');
+    const ctx = cvs.getContext('2d');
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&アイウエオカキクケコサシスセソタチツテトナニヌネノ';
+    const FS = 13;
+    let cols, drops, raf;
+    function _resize() {
+      cvs.width  = cvs.offsetWidth  || window.innerWidth;
+      cvs.height = cvs.offsetHeight || window.innerHeight;
+      cols  = Math.floor(cvs.width / FS);
+      drops = Array.from({length: cols}, () => Math.random() * -50 | 0);
+    }
+    function _tick() {
+      ctx.fillStyle = 'rgba(0,4,8,.18)';
+      ctx.fillRect(0, 0, cvs.width, cvs.height);
+      ctx.font = FS + 'px monospace';
+      for (let i = 0; i < cols; i++) {
+        const ch = CHARS[Math.random() * CHARS.length | 0];
+        const bright = Math.random() > 0.92;
+        ctx.fillStyle = bright ? '#afffdd' : '#2fa874';
+        ctx.fillText(ch, i * FS, drops[i] * FS);
+        if (drops[i] * FS > cvs.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i] += 0.45;
+      }
+      raf = requestAnimationFrame(_tick);
+    }
+    function _start() {
+      _resize();
+      if (!raf) _tick();
+    }
+    function _stop() {
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+    }
+    const _origOpen  = window.openDbg  || function(){};
+    const _origClose = window.closeDbg || function(){};
+    window.openDbg  = function() { _origOpen();  _start(); };
+    window.closeDbg = function() { _origClose(); _stop();  };
+    window.addEventListener('resize', () => { if (raf) _resize(); });
+  })();
+
+  document.getElementById('dbgOverlay').addEventListener('click', e=>{
+    if (e.target === document.getElementById('dbgOverlay')) closeDbg();
+  });
+
+  document.addEventListener('keydown', e=>{
+    if (e.ctrlKey&&e.shiftKey&&e.key==='D') {
+      e.preventDefault();
+      document.getElementById('dbgOverlay').classList.contains('open') ? closeDbg() : openDbg();
+    }
+    if (e.key==='Escape') closeDbg();
+  });
+})();
+
+
