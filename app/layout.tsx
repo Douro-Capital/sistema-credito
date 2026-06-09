@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer={false} />
         <script src="/dashboard-init.js" defer />
       </head>
-      <body style={{ margin: 0, padding: 0, overflow: 'hidden', background: '#0d1520' }}>
+      <body style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
         {children}
       </body>
     </html>
