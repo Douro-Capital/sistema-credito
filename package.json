@@ -1,0 +1,23 @@
+{
+  "name": "douro-overview",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "start": "next start",
+    "generate": "python scripts/generate_data.py && python scripts/extract_js.py"
+  },
+  "dependencies": {
+    "next": "^15.3.2",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
+    "typescript": "^5"
+  }
+}

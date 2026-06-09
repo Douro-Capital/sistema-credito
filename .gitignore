@@ -1,0 +1,21 @@
+# Next.js
+.next/
+out/
+node_modules/
+
+# Dados gerados pelo Python (NÃO commitar — podem conter dados sensíveis)
+public/data/dashboard.json
+public/dashboard-init.js
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
