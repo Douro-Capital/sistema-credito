@@ -942,7 +942,12 @@ function homeDiveEmp(empresa) {
 
 // ── HOME — COMMAND CENTER ─────────────────────────────────────────────────
 function buildHome() {
-  const cartSel    = document.getElementById('carteiraFilter').value;
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-home');
+  if (_pg && !document.getElementById('homeKpiRow')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Panorama</h2><div class="accent-line"></div><span id="homeDataRef" style="font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap;"></span></div><div class="home-kpi-row" id="homeKpiRow"></div><div class="home-grid-main"><div class="card"><div class="card-title">Saldo Bruto por Emissor</div><div class="chart-scroll-wrap"><div class="chart-scroll-inner" id="homeChartEmissorWrap"><div style="height:300px;position:relative;"><canvas id="homeChartEmissor"></canvas></div></div></div></div><div class="card"><div class="card-title">Por Classe de Ativo</div><div style="height:300px;position:relative;"><canvas id="homeChartClasse"></canvas></div></div></div><div class="home-grid-bottom"><div class="card"><div class="card-title">Top 5 Corporativos — <span onclick="homeDiveScorecard('corp')" style="font-size:10px;color:var(--teal);text-transform:none;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Clique para Deep Dive →</span></div><div id="homeTop5Corp" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div></div><div class="card"><div class="card-title">Top 5 Bancos — <span onclick="homeDiveScorecard('banco')" style="font-size:10px;color:var(--teal);text-transform:none;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Clique para Deep Dive →</span></div><div id="homeTop5Bancos" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div></div></div><div class="home-grid-banks"><div class="card"><div class="card-title">Retorno Acumulado <span style="font-size:10px;color:var(--text3);text-transform:none;font-weight:400;">por carteira</span></div><div style="height:280px;position:relative;"><canvas id="homeChartPerf"></canvas></div></div></div>`;
+  }
+  const cartSel    = document.getElementById('carteiraFilter')?.value || '';
   const ativosBase = cartSel ? ATIVOS.filter(a => a.carteira === cartSel) : ATIVOS;
   const ativos     = ativosBase.filter(a => (a.saldo || 0) > 0);
   const totalCred  = ativos.reduce((s, a) => s + (a.saldo || 0), 0);
@@ -958,7 +963,8 @@ function buildHome() {
     ? (ativos.reduce((s,a) => s+(a.duration||0)*(a.saldo||0), 0) / totalCred).toFixed(1) : '—';
   const nEmissores   = new Set(ativos.map(a => a.emissor).filter(Boolean)).size;
 
-  document.getElementById('homeKpiRow').innerHTML = `
+  const _homeKpiRow = document.getElementById('homeKpiRow');
+  if (_homeKpiRow) _homeKpiRow.innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Crédito Privado</div><div class="kpi-value">${fmtBRL(totalCred)}</div><div class="kpi-sub">${ativos.length} ativos · ${nEmissores} emissores</div></div>
     <div class="kpi-card"><div class="kpi-label">Duration Média</div><div class="kpi-value">${durPond}a</div><div class="kpi-sub">Ponderada por saldo</div></div>
     <div class="kpi-card"><div class="kpi-label">Aprovados</div><div class="kpi-value">${totalCred>0?((aprovados/totalCred)*100).toFixed(1):0}%</div><span class="kpi-badge green">${fmtBRL(aprovados)}</span></div>`;
@@ -1020,8 +1026,9 @@ function buildHome() {
     }
   });
 
-  const top5Corp = RANK_CORP.slice(0,5);
-  document.getElementById('homeTop5Corp').innerHTML = top5Corp.map((rankInfo, i) => {
+  const top5Corp = (Array.isArray(RANK_CORP) ? RANK_CORP : []).slice(0,5);
+  const _homeTop5Corp = document.getElementById('homeTop5Corp');
+  if (_homeTop5Corp) _homeTop5Corp.innerHTML = top5Corp.map((rankInfo, i) => {
     const em    = rankInfo.empresa || '—';
     const setor = rankInfo.setor || '—';
     const saldo = ativos.filter(a=>a.emissor===em).reduce((s,a)=>s+(a.saldo||0),0);
@@ -1045,8 +1052,9 @@ function buildHome() {
     </div>`;
   }).join('');
 
-  const top5Bancos = RANK_BANCOS.slice(0,5);
-  document.getElementById('homeTop5Bancos').innerHTML = top5Bancos.map((rankInfo, i) => {
+  const top5Bancos = (Array.isArray(RANK_BANCOS) ? RANK_BANCOS : []).slice(0,5);
+  const _homeTop5Bancos = document.getElementById('homeTop5Bancos');
+  if (_homeTop5Bancos) _homeTop5Bancos.innerHTML = top5Bancos.map((rankInfo, i) => {
     const em    = rankInfo.empresa || '—';
     const saldo = ativos.filter(a=>a.emissor===em).reduce((s,a)=>s+(a.saldo||0),0);
     return `<div style="display:flex;flex-direction:column;gap:0;margin-bottom:8px;padding:10px 12px;border-radius:8px;border:1px solid transparent;background:transparent;transition:background .15s;border:1px solid transparent;">
@@ -1095,6 +1103,11 @@ function buildHome() {
 
 // ── COMPOSIÇÃO ─────────────────────────────────────────────────────────────
 function buildComposicao() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pgC = document.getElementById('page-composicao');
+  if (_pgC && !document.getElementById('kpiRow')) {
+    _pgC.innerHTML = `<div class="section-header"><h2>Composição da Carteira</h2><div class="accent-line"></div></div><div class="kpi-row" id="kpiRow"></div><div class="grid-2-1"><div class="card"><div class="card-title">Saldo Bruto % da Carteira Total por Emissor</div><div class="chart-scroll-wrap"><div class="chart-scroll-inner" id="chartEmissorWrap"><div style="height:320px;position:relative;"><canvas id="chartEmissor" style="cursor:pointer"></canvas></div></div></div><div id="emissorVerTodosChip" style="display:none;margin-top:8px;font-size:11px;color:var(--teal);text-align:right;cursor:pointer;font-weight:600;letter-spacing:.01em;"></div></div><div class="card"><div class="card-title">% por Setor</div><div class="h320"><canvas id="chartSetor"></canvas></div></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Detalhamento por Ativo <span id="countAtivos" style="color:var(--text3);font-size:11px;text-transform:none"></span><span id="emFiltroTag"></span></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div style="position:relative"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="ativosSearch" oninput="_renderTbodyAtivos()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div><button onclick="_ativosSortReset()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text3)">Limpar</button></div></div><div class="table-wrap"><table><thead><tr><th onclick="_ativosSort('carteira')" style="cursor:pointer;user-select:none;white-space:nowrap">Carteira <span id="_sh_carteira" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('ticker')" style="cursor:pointer;user-select:none;white-space:nowrap">Ticker <span id="_sh_ticker" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('emissor')" style="cursor:pointer;user-select:none;white-space:nowrap">Emissor <span id="_sh_emissor" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('setor')" style="cursor:pointer;user-select:none;white-space:nowrap">Setor <span id="_sh_setor" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('saldo')" style="cursor:pointer;user-select:none;white-space:nowrap">Saldo Bruto <span id="_sh_saldo" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_ativosSort('pctCred')" style="cursor:pointer;user-select:none;white-space:nowrap">% Credito <span id="_sh_pctCred" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('pctPL')" style="cursor:pointer;user-select:none;white-space:nowrap">% PL Total <span id="_sh_pctPL" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('duration')" style="cursor:pointer;user-select:none;white-space:nowrap">Duration <span id="_sh_duration" style="opacity:.4">&#8597;</span></th><th onclick="_ativosSort('classe')" style="cursor:pointer;user-select:none;white-space:nowrap">Classe <span id="_sh_classe" style="opacity:.4">&#8597;</span></th><th>Rating Mkt</th><th>Rating Douro</th><th onclick="_ativosSort('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status <span id="_sh_status" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodyAtivos"></tbody></table></div></div>`;
+  }
   const ativos = getFiltered();
 const carteiraSelecionada =
   document.getElementById('carteiraFilter')?.value || '';
@@ -1117,7 +1130,8 @@ const totalCredito =
   const analise      = ativos.filter(a => STATUS_ANALISE.includes(a.Status)).reduce((s,a) => s+(a.saldo||0), 0);
   const semCobertura = ativos.filter(a => !STATUS_COBERTOS.includes(a.Status)).reduce((s,a) => s+(a.saldo||0), 0);
   const uniqueTickers = new Set(ativos.map(a => a.ticker).filter(Boolean)).size;
-  document.getElementById('kpiRow').innerHTML = `
+  const _kpiRow = document.getElementById('kpiRow');
+  if (_kpiRow) _kpiRow.innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Saldo Crédito Privado</div><div class="kpi-value">${fmtBRL(totalCredito)}</div><div class="kpi-sub">${ativos.length} posições · ${uniqueTickers} tickers</div></div>
     <div class="kpi-card"><div class="kpi-label">% do PL Total</div><div class="kpi-value">${plFiltrado>0?(totalCredito/plFiltrado*100).toFixed(1):0}%</div><div class="kpi-sub">PL: ${fmtBRL(plFiltrado)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Aprovados</div><div class="kpi-value">${totalCredito>0?(aprovados/totalCredito*100).toFixed(1):0}%</div><span class="kpi-badge green">${fmtBRL(aprovados)}</span></div>
@@ -1327,6 +1341,11 @@ if (canvasEmissor) { canvasEmissor.width = larguraGrafico; canvasEmissor.height 
 
 // ── RATING ─────────────────────────────────────────────────────────────────
 function buildRating() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-rating');
+  if (_pg && !document.getElementById('chartClasse')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Classe e Rating</h2><div class="accent-line"></div></div><div class="grid-3"><div class="card"><div class="card-title">% por Classe de Ativo</div><div class="h260"><canvas id="chartClasse"></canvas></div></div><div class="card"><div class="card-title">% Rating de Mercado</div><div class="h260"><canvas id="chartRatingMkt"></canvas></div></div><div class="card"><div class="card-title">% Rating Proprietário (Douro)</div><div class="h260"><canvas id="chartRatingDouro"></canvas></div></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Detalhamento por Ativo <span id="countAtivosRating" style="color:var(--text3);font-size:11px;text-transform:none"></span><span id="emFiltroTagRating"></span></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div style="position:relative"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="ativosSearchRating" oninput="_renderTbodyAtivosRating()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div><button onclick="_ativosSortReset()" title="Resetar ordenacao" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text3);transition:all .15s" onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">Limpar</button></div></div><div class="table-wrap"><table><thead><tr><th onclick="_ativosSort('carteira')" style="cursor:pointer;user-select:none;white-space:nowrap">Carteira <span id="_sh_carteira_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('ticker')" style="cursor:pointer;user-select:none;white-space:nowrap">Ticker <span id="_sh_ticker_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('emissor')" style="cursor:pointer;user-select:none;white-space:nowrap">Emissor <span id="_sh_emissor_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('setor')" style="cursor:pointer;user-select:none;white-space:nowrap">Setor <span id="_sh_setor_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('saldo')" style="cursor:pointer;user-select:none;white-space:nowrap">Saldo Bruto <span id="_sh_saldo_rating" style="color:var(--teal);opacity:1">↓</span></th><th onclick="_ativosSort('pctCred')" style="cursor:pointer;user-select:none;white-space:nowrap">% Credito <span id="_sh_pctCred_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('pctPL')" style="cursor:pointer;user-select:none;white-space:nowrap">% PL Total <span id="_sh_pctPL_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('duration')" style="cursor:pointer;user-select:none;white-space:nowrap">Duration <span id="_sh_duration_rating" style="opacity:.4">↕</span></th><th onclick="_ativosSort('classe')" style="cursor:pointer;user-select:none;white-space:nowrap">Classe <span id="_sh_classe_rating" style="opacity:.4">↕</span></th><th>Rating Mkt</th><th>Rating Douro</th><th onclick="_ativosSort('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status <span id="_sh_status_rating" style="opacity:.4">↕</span></th></tr></thead><tbody id="tbodyAtivosRating"></tbody></table></div></div>`;
+  }
   const carteiraSelecionada = document.getElementById('carteiraFilter')?.value || '';
   const plFiltrado = carteiraSelecionada ? (PL_POR_CARTEIRA[carteiraSelecionada] || 0) : PL_TOTAL;
   const ativos       = getFiltered();
@@ -1580,16 +1599,21 @@ function finAddAll()    { finGetEmpsDisp().forEach(e => finSelecionadas.add(e));
 function finRemoveAll() { finSelecionadas.clear(); finRenderEmpList(); buildFinanceiros(); }
 function finOnSetorChange() { finRenderEmpList(); }
 function buildFinanceiros() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-financeiros');
+  if (_pg && !document.getElementById('finEmpList')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Dados</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Indicador</div><select class="custom-select" id="indFinSel" onchange="buildFinanceiros()" style="width:100%"><option value="DivLiquida/EBITDA">Dívida Líq / EBITDA</option><option value="Mg EBITDA 36M">Mg. EBITDA (%)</option><option value="Mg Bruta 36M">Mg. Bruta (%)</option><option value="Estrutura de Capital (D/D+E)">Estrutura de Capital</option><option value="ROE">ROE</option><option value="ROA">ROA</option><option value="ROIC">ROIC</option><option value="Liquidez Corrente">Liquidez Corrente</option><option value="Receita_TTM">Receita TTM</option><option value="EBITDA_TTM">EBITDA TTM</option><option value="FCF_TTM">FCF TTM</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Setor (CVM)</div><select class="custom-select" id="setorFinSel" onchange="finOnSetorChange()" style="width:100%"><option value="">Todos os Setores</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Empresas selecionadas</div><div id="finChipsWrap" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px;align-items:center"><span style="color:var(--text3);font-size:11px">Nenhuma selecionada — use os filtros</span></div></div></div><div style="margin-top:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Empresas disponíveis <span id="finEmpCount" style="color:var(--teal)"></span><button onclick="finAddAll()" style="margin-left:12px;background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.3);color:var(--teal);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">+ Adicionar todas</button><button onclick="finRemoveAll()" style="margin-left:6px;background:rgba(217,65,65,.1);border:1px solid rgba(217,65,65,.3);color:var(--red);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">× Limpar</button></div><div id="finEmpList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:100px;overflow-y:auto"></div></div><div style="margin-top:16px"><div class="glass-range-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.10em">Período</div><span id="finDateRangeLabel" class="glass-range-label"></span></div><div style="position:relative;height:32px;padding:0 8px"><div id="finRangeTrack" style="position:absolute;top:14px;left:8px;right:8px;height:5px;background:rgba(0,103,123,0.10);border-radius:999px"><div id="finRangeFill" style="position:absolute;height:100%;background:linear-gradient(90deg,rgba(0,103,123,.45),var(--teal));border-radius:999px;left:0%;width:100%;transition:left .04s,width .04s"></div></div><input type="range" id="finRangeMin" min="0" max="100" value="0" class="fin-range-inp" oninput="finRangeUpdate(event)"><input type="range" id="finRangeMax" min="0" max="100" value="100" class="fin-range-inp" oninput="finRangeUpdate(event)"></div></div></div></div><div class="card"><div class="card-title" id="finTitle">Indicador</div><div class="h320"><canvas id="chartFinMain"></canvas></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Painel de Indicadores — Último Período</div><div style="position:relative;flex-shrink:0"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="finPainelSearch" oninput="_finPainelRender()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div></div><div class="table-wrap"><table><thead><tr><th onclick="_finPainelSort('empresa')" style="cursor:pointer;user-select:none">Empresa <span id="_fpsh_empresa" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_finPainelSort('setor')" style="cursor:pointer;user-select:none">Setor (CVM) <span id="_fpsh_setor" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('rec')" style="cursor:pointer;user-select:none">Receita TTM <span id="_fpsh_rec" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('ebt')" style="cursor:pointer;user-select:none">EBITDA TTM <span id="_fpsh_ebt" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('mg')" style="cursor:pointer;user-select:none">Mg EBITDA <span id="_fpsh_mg" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('dl')" style="cursor:pointer;user-select:none">Div Liq/EBITDA <span id="_fpsh_dl" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('ec')" style="cursor:pointer;user-select:none">Estrutura Cap. <span id="_fpsh_ec" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('roe')" style="cursor:pointer;user-select:none">ROE <span id="_fpsh_roe" style="opacity:.4">&#8597;</span></th><th onclick="_finPainelSort('lc')" style="cursor:pointer;user-select:none">Liq. Corrente <span id="_fpsh_lc" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodyFin"></tbody></table></div></div>`;
+  }
   if (!finInicializado) { finInitSels(); finInicializado = true; }
   finRenderEmpList();
-  const ind      = document.getElementById('indFinSel').value;
+  const ind      = document.getElementById('indFinSel')?.value;
   const empresas = [...finSelecionadas];
   if (!empresas.length) {
     if (activeCharts['chartFinMain']) { activeCharts['chartFinMain'].destroy(); delete activeCharts['chartFinMain']; }
     _finPainelRender();
     return;
   }
-  document.getElementById('finTitle').textContent = ind.replace('_',' ').replace('TTM','TTM (R$ Mi)');
+  const _finTitleEl = document.getElementById('finTitle'); if (_finTitleEl) _finTitleEl.textContent = (ind||'').replace('_',' ').replace('TTM','TTM (R$ Mi)');
   const isPct = ['Mg EBITDA 36M','Mg Bruta 36M','Estrutura de Capital (D/D+E)','ROE','ROA','ROIC'].includes(ind);
   const isVal = ['Receita_TTM','EBITDA_TTM','FCF_TTM'].includes(ind);
   const datasets = empresas.map((emp, i) => {
@@ -1714,6 +1738,11 @@ function _fundInitSel() {
 }
 
 function buildFundamentos() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-fundamentos');
+  if (_pg && !document.getElementById('fundEmpSel')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Empresas</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 22px"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:end"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Empresa</div><div style="position:relative"><svg style="position:absolute;left:10px;top:9px;width:14px;height:14px;stroke:var(--text3);fill:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="fundSearch" oninput="fundFilterList()" placeholder="Buscar empresa..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 32px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;transition:border-color .2s"></div><select id="fundEmpSel" class="custom-select" onchange="buildFundamentos()" style="width:100%;margin-top:8px"></select></div><div id="fundInfoA" style="display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Setor / Último Balanço</div><div id="fundInfoSetor" style="font-size:13px;font-weight:600;color:var(--navy)">—</div><div id="fundInfoData" style="font-size:11px;color:var(--text3)">—</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Receita TTM</div><div id="fundKpiRec" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">EBITDA TTM</div><div id="fundKpiEbt" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--teal)">—</div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Dív. Líq/EBITDA</div><div id="fundKpiDl" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div></div><div style="display:flex;flex-direction:column;gap:4px;position:relative"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Liq. Corrente</div><div style="display:flex;align-items:center;gap:8px"><div id="fundKpiLc" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div><button onclick="exportarPDFFundamentos()" title="Exportar dados da empresa como PDF" style="background:rgba(182,157,116,.15);border:1px solid rgba(182,157,116,.3);color:var(--text3);padding:5px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button></div></div></div></div><div style="margin-top:16px"><div class="glass-range-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.10em">Período</div><span id="fundDateRangeLabel" class="glass-range-label"></span></div><div style="position:relative;height:32px;padding:0 8px"><div id="fundRangeTrack" style="position:absolute;top:14px;left:8px;right:8px;height:5px;background:rgba(0,103,123,0.10);border-radius:999px"><div id="fundRangeFill" style="position:absolute;height:100%;background:linear-gradient(90deg,rgba(0,103,123,.45),var(--teal));border-radius:999px;left:0%;width:100%;transition:left .04s,width .04s"></div></div><input type="range" id="fundRangeMin" min="0" max="100" value="0" class="fin-range-inp" oninput="fundRangeUpdate(event)"><input type="range" id="fundRangeMax" min="0" max="100" value="100" class="fin-range-inp" oninput="fundRangeUpdate(event)"></div></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Resultado — Receita / EBITDA / Lucro Líquido (LTM)</div><div class="h320"><canvas id="fundChartPL"></canvas></div></div><div class="card"><div class="card-title">Margens LTM — Bruta / EBITDA / Líquida</div><div class="h320"><canvas id="fundChartMg"></canvas></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Alavancagem — Dív. Líquida/EBITDA · Dív. Bruta/EBITDA</div><div class="h320"><canvas id="fundChartLev"></canvas></div></div><div class="card"><div class="card-title">Liquidez — Corrente / Seca / Imediata</div><div class="h320"><canvas id="fundChartLiq"></canvas></div></div></div><div class="card"><div class="card-title">Fluxo de Caixa por Trimestre — FCO / FCI / FCF</div><div class="h320"><canvas id="fundChartCF"></canvas></div></div>`;
+  }
   if (!_fundIniciado) { _fundInitSel(); _fundIniciado = true; fundRangeInit(); }
   const sel  = document.getElementById('fundEmpSel');
   if (!sel || !sel.value) return;
@@ -1740,16 +1769,16 @@ function buildFundamentos() {
   const safe = arr => (arr||[]).map(v => (v == null || v !== v) ? null : v);
 
   // ── Info card ──
-  document.getElementById('fundInfoSetor').textContent = d.setor || '—';
-  document.getElementById('fundInfoData').textContent  = d.datas?.length ? 'Último balanço: ' + d.datas[d.datas.length-1] : '—';
+  const _fIS = document.getElementById('fundInfoSetor'); if (_fIS) _fIS.textContent = d.setor || '—';
+  const _fID = document.getElementById('fundInfoData');  if (_fID) _fID.textContent  = d.datas?.length ? 'Último balanço: ' + d.datas[d.datas.length-1] : '—';
   const rec  = last(d['Receita_TTM']);
   const ebt  = last(d['EBITDA_TTM']);
   const dl   = last(d['DivLiquida/EBITDA']);
   const lc   = last(d['Liquidez Corrente']);
-  document.getElementById('fundKpiRec').textContent = rec != null ? 'R$ '+mi(rec)+' Mi' : '—';
-  document.getElementById('fundKpiEbt').textContent = ebt != null ? 'R$ '+mi(ebt)+' Mi' : '—';
-  document.getElementById('fundKpiDl').textContent  = dl  != null ? Number(dl).toFixed(1)+'x'  : '—';
-  document.getElementById('fundKpiLc').textContent  = lc  != null ? Number(lc).toFixed(2)+'x'  : '—';
+  const _fKR = document.getElementById('fundKpiRec'); if (_fKR) _fKR.textContent = rec != null ? 'R$ '+mi(rec)+' Mi' : '—';
+  const _fKE = document.getElementById('fundKpiEbt'); if (_fKE) _fKE.textContent = ebt != null ? 'R$ '+mi(ebt)+' Mi' : '—';
+  const _fKD = document.getElementById('fundKpiDl');  if (_fKD) _fKD.textContent  = dl  != null ? Number(dl).toFixed(1)+'x'  : '—';
+  const _fKL = document.getElementById('fundKpiLc');  if (_fKL) _fKL.textContent  = lc  != null ? Number(lc).toFixed(2)+'x'  : '—';
 
   const LOPT = {
     type:'line',
@@ -2374,6 +2403,11 @@ function _bcbLookup(nome) {
 let _bancosIniciado = false;
 
 function buildBancos(preselect) {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-bancos');
+  if (_pg && !document.getElementById('bancosEmpSel')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Bancos</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 22px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Banco</div><select id="bancosEmpSel" class="custom-select" onchange="buildBancos()" style="width:100%"></select></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Basileia</div><div id="bancoKpiBasileia" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">ROE</div><div id="bancoKpiROE" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--teal)">—</div></div><div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:4px">Inadimplência</div><div style="display:flex;align-items:center;gap:8px"><div id="bancoKpiNPL" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)">—</div><button onclick="exportarPDFBancos()" title="Exportar dados do banco como PDF" style="background:rgba(182,157,116,.15);border:1px solid rgba(182,157,116,.3);color:var(--text3);padding:5px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</button></div></div></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Solvência — Índice de Basileia · Tier 1 Capital</div><div class="h320"><canvas id="bancoChartBasileia"></canvas></div></div><div class="card"><div class="card-title">Rentabilidade — ROE · NIM</div><div class="h320"><canvas id="bancoChartRent"></canvas></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Qualidade de Crédito — Cobertura PDD · Desp. Provisão/Carteira</div><div class="h320"><canvas id="bancoChartCredit"></canvas></div></div><div class="card"><div class="card-title">Eficiência Operacional</div><div class="h320"><canvas id="bancoChartEfic"></canvas></div></div></div>`;
+  }
   const sel = document.getElementById('bancosEmpSel');
   if (!sel) return;
   if (!_bancosIniciado) {
@@ -2395,11 +2429,11 @@ function buildBancos(preselect) {
     const basLast = last(d.basileia);
     const roeLast = last(d.roe);
     const nplLast = last(d.inadimpl);
-    document.getElementById('bancoKpiBasileia').textContent = basLast!=null ? Number(basLast).toFixed(1)+'%' : '—';
-    document.getElementById('bancoKpiROE').textContent      = roeLast!=null ? Number(roeLast).toFixed(1)+'%' : '—';
-    document.getElementById('bancoKpiNPL').textContent      = nplLast!=null ? Number(nplLast).toFixed(1)+'%' : '—';
+    const _bkB = document.getElementById('bancoKpiBasileia'); if (_bkB) _bkB.textContent = basLast!=null ? Number(basLast).toFixed(1)+'%' : '—';
+    const _bkR = document.getElementById('bancoKpiROE');      if (_bkR) _bkR.textContent = roeLast!=null ? Number(roeLast).toFixed(1)+'%' : '—';
+    const _bkN = document.getElementById('bancoKpiNPL');      if (_bkN) _bkN.textContent = nplLast!=null ? Number(nplLast).toFixed(1)+'%' : '—';
   } else {
-    ['bancoKpiBasileia','bancoKpiROE','bancoKpiNPL'].forEach(id=>{document.getElementById(id).textContent='N/D';});
+    ['bancoKpiBasileia','bancoKpiROE','bancoKpiNPL'].forEach(id=>{ const _e=document.getElementById(id); if(_e) _e.textContent='N/D'; });
     // Sem dados BCB: limpa gráficos e exibe aviso
     ['bancoChartBasileia','bancoChartRent','bancoChartCredit','bancoChartEfic'].forEach(id=>{
       if(activeCharts[id]){activeCharts[id].destroy();delete activeCharts[id];}
@@ -2523,6 +2557,11 @@ function _renderTbodyBancosComp(){
 }
 
 function buildSpreads() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-spreads');
+  if (_pg && !document.getElementById('spAtivoList')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Spreads vs NTN-B</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start;margin-bottom:14px"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Classe</div><select class="custom-select" id="spClasseSel" onchange="spOnClasseChange()" style="width:100%"><option value="">Todas as Classes</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Setor</div><select class="custom-select" id="spSetorSel" onchange="spOnSetorChange()" style="width:100%"><option value="">Todos os Setores</option></select></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Emissor</div><select class="custom-select" id="spEmsSel" onchange="spOnEmsChange()" style="width:100%"><option value="">Todos os Emissores</option></select></div></div><div style="margin-bottom:10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:6px">Ativos selecionados</div><div id="spChipsWrap" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px;align-items:center"><span style="color:var(--text3);font-size:11px">Nenhum selecionado — use os filtros acima</span></div></div><div style="margin-top:4px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Ativos disponíveis <span id="spAtivoCount" style="color:var(--teal)"></span><button type="button" onclick="spAddAll()" style="margin-left:12px;background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.3);color:var(--teal);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">+ Adicionar todos</button><button type="button" onclick="spRemoveAll()" style="margin-left:6px;background:rgba(217,65,65,.1);border:1px solid rgba(217,65,65,.3);color:var(--red);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">× Limpar</button></div><div id="spAtivoList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:100px;overflow-y:auto"></div></div></div><div class="card"><div class="card-title">Evolução das Taxas (%)</div><div class="h320"><canvas id="chartSpTaxa"></canvas></div></div><div class="card"><div class="card-title">Evolução dos Spreads vs NTN-B (%)</div><div class="h320"><canvas id="chartSpSpread"></canvas></div></div><div class="card"><div class="card-title">Dispersão — Duration × Spread</div><div class="h320"><canvas id="chartSpScatter"></canvas></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Posição Atual — Ativos com Spread</div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div style="position:relative"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="spreadsSearch" oninput="_renderTbodySpreads()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div><label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);cursor:pointer;white-space:nowrap"><input type="checkbox" id="spSoSelecionados" onchange="_renderTbodySpreads()" style="cursor:pointer"> Só selecionados</label></div></div><div class="table-wrap"><table><thead><tr><th onclick="_spSort('ticker')" style="cursor:pointer;user-select:none;white-space:nowrap">Ativo <span id="_spsh_ticker" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('emissor')" style="cursor:pointer;user-select:none;white-space:nowrap">Emissor <span id="_spsh_emissor" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('setor')" style="cursor:pointer;user-select:none;white-space:nowrap">Setor <span id="_spsh_setor" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('taxa')" style="cursor:pointer;user-select:none;white-space:nowrap">Taxa (%) <span id="_spsh_taxa" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('spread')" style="cursor:pointer;user-select:none;white-space:nowrap">Spread (%) <span id="_spsh_spread" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_spSort('mediana')" style="cursor:pointer;user-select:none;white-space:nowrap">Mediana <span id="_spsh_mediana" style="opacity:.4">&#8597;</span></th><th>+1 MAD</th><th>−1 MAD</th><th onclick="_spSort('ntnb')" style="cursor:pointer;user-select:none;white-space:nowrap">NTN-B Ref <span id="_spsh_ntnb" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('duration')" style="cursor:pointer;user-select:none;white-space:nowrap">Duration <span id="_spsh_duration" style="opacity:.4">&#8597;</span></th><th onclick="_spSort('status')" style="cursor:pointer;user-select:none;white-space:nowrap">Status <span id="_spsh_status" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodySpreads"></tbody></table></div></div>`;
+  }
   // NÃO chame spInitSels() aqui — só popula na primeira vez
   if (!spInicializado) {
     spInitSels();
@@ -2534,7 +2573,7 @@ function buildSpreads() {
     ['chartSpTaxa','chartSpSpread','chartSpScatter'].forEach(id => {
       if (activeCharts[id]) { activeCharts[id].destroy(); delete activeCharts[id]; }
     });
-    document.getElementById('tbodySpreads').innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:40px 32px;font-size:13px">Selecione ativos usando os filtros acima</td></tr>';
+    const _tbSp = document.getElementById('tbodySpreads'); if (_tbSp) _tbSp.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:40px 32px;font-size:13px">Selecione ativos usando os filtros acima</td></tr>';
     return;
   }
   const dsTaxa = ativosUsar.map((a, i) => {
@@ -2675,6 +2714,11 @@ function calcDistribuicao(valores, pontos=60) {
   return { xs, ys };
 }
 function buildTunel() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-tunel');
+  if (_pg && !document.getElementById('ativoTunelSel')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Túnel de Preço</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr;gap:16px;"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Ativo</div><select id="ativoTunelSel" class="custom-select" onchange="buildTunel()" style="width:100%"></select></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Taxa (%) — Mediana ± 1 MAD + MM21</div><div class="h320"><canvas id="chartTunelTaxa"></canvas></div></div><div class="card"><div class="card-title">Distribuição Histórica — Taxa (%)</div><div class="h320"><canvas id="chartHistTunelTaxa"></canvas></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Spread (%) — Mediana ± 1 MAD + MM21</div><div class="h320"><canvas id="chartTunelSpread"></canvas></div></div><div class="card"><div class="card-title">Distribuição Histórica — Spread (%)</div><div class="h320"><canvas id="chartHistTunelSpread"></canvas></div></div></div><div class="card"><div class="card-title">Estatísticas do Ativo Selecionado</div><div class="table-wrap"><table><thead><tr><th>Ticker</th><th>Emissor</th><th>Setor</th><th>Duration</th><th>Taxa Atual (%)</th><th>Spread Atual (%)</th><th>Mediana Spread</th><th>+1 MAD</th><th>−1 MAD</th><th>Z-Score</th><th>Vol Spread</th><th>Status</th></tr></thead><tbody id="tbodyTunel"></tbody></table></div></div>`;
+  }
   const ativosCarteira = getFiltered().map(a => a.ticker);
   const ativos = Object.keys(SPREADS_TS).filter(a => ativosCarteira.includes(a));
   const sel = document.getElementById('ativoTunelSel');
@@ -2687,7 +2731,7 @@ function buildTunel() {
   if (!ativo || !SPREADS_TS[ativo]) {
     if (activeCharts['chartTunelTaxa'])   activeCharts['chartTunelTaxa'].destroy();
     if (activeCharts['chartTunelSpread']) activeCharts['chartTunelSpread'].destroy();
-    document.getElementById('tbodyTunel').innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:32px">Nenhum ativo disponível.</td></tr>';
+    const _tbT = document.getElementById('tbodyTunel'); if (_tbT) _tbT.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--text3);padding:32px">Nenhum ativo disponível.</td></tr>';
     return;
   }
   const ts   = SPREADS_TS[ativo];
@@ -2737,7 +2781,8 @@ function buildTunel() {
   }
   const zCls  = zscore==null?'': zscore>2?'col-bad': zscore>1?'col-warn': zscore<-1?'col-good':'';
   const scSp  = spreadAtual==null?'': spreadAtual>(p1mad??Infinity)?'col-bad': spreadAtual<(m1mad??-Infinity)?'col-good':'col-warn';
-  document.getElementById('tbodyTunel').innerHTML = `<tr>
+  const _tbTunel = document.getElementById('tbodyTunel');
+  if (_tbTunel) _tbTunel.innerHTML = `<tr>
     <td style="font-weight:600;font-size:11px">${ativo}</td>
     <td>${info.emissor||'—'}</td><td class="td-muted">${info.setor||'—'}</td>
     <td style="font-family:var(--mono)">${info.duration?Number(info.duration).toFixed(1)+'a':'—'}</td>
@@ -2788,6 +2833,11 @@ function bondRenderChips() {
 function bondAddAll()    { bondsFiltrados.forEach(b=>bondsSelecionados.add(b)); bondRenderList(); buildBonds(); }
 function bondRemoveAll() { bondsSelecionados.clear(); bondRenderList(); buildBonds(); }
 function buildBonds() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-bonds');
+  if (_pg && !document.getElementById('bondList')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Evolução — Bonds Offshore</h2><div class="accent-line"></div></div><div class="card" style="margin-bottom:16px;padding:16px 20px"><div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;align-items:start"><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Buscar Ticker</div><div style="position:relative;"><svg style="position:absolute;left:10px;top:9px;width:14px;height:14px;stroke:var(--text3);fill:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="bondSearch" oninput="bondFilterList()" placeholder="Ex: RUMO..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 30px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;transition:border-color .2s;"></div><div style="margin-top:12px;display:flex;gap:6px"><button onclick="bondAddAll()" style="background:rgba(0,103,123,.1);border:1px solid rgba(0,103,123,.3);color:var(--teal);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">+ Adicionar Visíveis</button><button onclick="bondRemoveAll()" style="background:rgba(217,65,65,.1);border:1px solid rgba(217,65,65,.3);color:var(--red);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:10px;font-weight:600">× Limpar</button></div></div><div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;margin-bottom:8px">Bonds Selecionados <span id="bondCount" style="color:var(--teal)"></span></div><div id="bondChipsWrap" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px;align-items:center;padding-top:4px;"><span style="color:var(--text3);font-size:11px">Nenhum selecionado — use a busca</span></div></div></div><div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px"><div id="bondList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto"></div></div></div><div class="card"><div class="card-title">Curva de Preço dos Ativos (Eixo Y = Valor / Eixo X = Data)</div><div class="h320" style="height: 400px;"><canvas id="chartBondsPreco"></canvas></div></div><div class="card"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;flex:1;min-width:0">Posição Atual — Bonds Offshore</div><div style="position:relative;flex-shrink:0"><svg style="position:absolute;left:8px;top:8px;width:12px;height:12px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="bondsSearch" oninput="_renderTbodyBonds()" placeholder="Pesquisar" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px 6px 26px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:160px;transition:border-color .2s" onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"></div></div><div class="table-wrap"><table><thead><tr><th onclick="_bondsSort('ticker')" style="cursor:pointer;user-select:none">Ativo <span id="_bsh_ticker" style="color:var(--teal);opacity:1">&#8595;</span></th><th onclick="_bondsSort('emissor')" style="cursor:pointer;user-select:none">Emissor <span id="_bsh_emissor" style="opacity:.4">&#8597;</span></th><th onclick="_bondsSort('status')" style="cursor:pointer;user-select:none">Status Douro <span id="_bsh_status" style="opacity:.4">&#8597;</span></th><th onclick="_bondsSort('preco')" style="cursor:pointer;user-select:none">Preço Atual <span id="_bsh_preco" style="opacity:.4">&#8597;</span></th></tr></thead><tbody id="tbodyBonds"></tbody></table></div></div>`;
+  }
   if (!bondsInicializado) { bondInitSels(); bondsInicializado=true; } else bondRenderList();
   const bondsPlot = [...bondsSelecionados];
   if (!bondsPlot.length) {
@@ -2943,6 +2993,11 @@ function showRankingPage(sub, el) {
 }
 // ── PERFORMANCE ───────────────────────────────────────────────────────────
 function buildPerformance() {
+  if (typeof PERF_DATA === 'undefined' || !PERF_DATA) return;
+  const _pg = document.getElementById('page-performance');
+  if (_pg && !document.getElementById('chartPerfAcum')) {
+    _pg.innerHTML = `<div class="section-header"><h2>Performance dos Ativos</h2><div class="accent-line"></div></div><div class="flex-row"><select class="custom-select" id="janelaPerf" onchange="buildPerformance()"><option value="21">21 dias</option><option value="63">63 dias</option><option value="252">252 dias</option></select></div><div class="grid-2"><div class="card"><div class="card-title">Retorno Acumulado</div><div class="h320"><canvas id="chartPerfAcum"></canvas></div></div><div class="card"><div class="card-title">Rolling Return</div><div class="h320"><canvas id="chartRolling"></canvas></div></div></div><div class="card"><div class="card-title">Matriz de Correlação</div><div class="table-wrap"><table id="corrTable"></table></div></div><div class="card"><div class="card-title">Métricas</div><div class="table-wrap"><table><thead><tr><th>Ativo</th><th>Volatilidade</th><th>DrawDown Máx.</th><th>Retorno Acum.</th></tr></thead><tbody id="tbodyPerf"></tbody></table></div></div>`;
+  }
   const ativos = Object.keys(PERF_DATA.ativos);
   const datasets = ativos.map((a,i)=>({ label:a, data:PERF_DATA.ativos[a].retorno_acum.map(v=>v*100), borderColor:COLORS[i%COLORS.length], backgroundColor:'transparent', tension:.3, pointRadius:0, borderWidth:2 }));
   mk('chartPerfAcum',{ type:'line', data:{ labels:PERF_DATA.datas, datasets }, options:{
@@ -2954,7 +3009,7 @@ function buildPerformance() {
       y:{ ...CHART_DEFAULTS.scales.y, ticks:{ ...CHART_DEFAULTS.scales.y.ticks, callback: v=>v.toFixed(1)+'%' } }
     }
   } });
-  const janela=parseInt(document.getElementById('janelaPerf').value);
+  const janela=parseInt(document.getElementById('janelaPerf')?.value || '21');
   const rollingDs = ativos.map((a,i)=>{
     const rets=PERF_DATA.ativos[a].retornos, rolling=[];
     for(let j=janela;j<rets.length;j++){ let acc=1; for(let k=j-janela;k<j;k++) acc*=(1+rets[k]); rolling.push((acc-1)*100); }
@@ -2969,7 +3024,7 @@ function buildPerformance() {
       y:{ ...CHART_DEFAULTS.scales.y, ticks:{ ...CHART_DEFAULTS.scales.y.ticks, callback: v=>v.toFixed(1)+'%' } }
     }
   } });
-  document.getElementById('tbodyPerf').innerHTML = ativos.map(a=>{
+  const _tbPerf = document.getElementById('tbodyPerf'); if (_tbPerf) _tbPerf.innerHTML = ativos.map(a=>{
     const d=PERF_DATA.ativos[a];
     return `<tr><td style="font-weight:700">${a}</td><td style="font-family:var(--mono)">${(d.vol*100).toFixed(2)}%</td><td class="${d.drawdown<-0.1?'col-bad':'col-good'}" style="font-family:var(--mono)">${(d.drawdown*100).toFixed(2)}%</td><td class="${d.ret_total>0?'col-good':'col-bad'}" style="font-family:var(--mono)">${(d.ret_total*100).toFixed(2)}%</td></tr>`;
   }).join('');
@@ -2979,10 +3034,15 @@ function buildPerformance() {
   html+='</tr></thead><tbody>';
   corr.values.forEach((row,i)=>{ html+=`<tr><td style="font-weight:700">${corr.labels[i]}</td>`; row.forEach(v=>{ html+=`<td style="font-family:var(--mono)">${v.toFixed(2)}</td>`; }); html+='</tr>'; });
   html+='</tbody>';
-  document.getElementById('corrTable').innerHTML=html;
+  const _corrTbl = document.getElementById('corrTable'); if (_corrTbl) _corrTbl.innerHTML=html;
 }
 // ── DOURO NEWS ────────────────────────────────────────────────────────────
 function buildDouroNews() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-douro-news');
+  if (_pg && !document.getElementById('newsInsight')) {
+    _pg.innerHTML = `<div class="section-header"><div style="display:flex;align-items:center;gap:14px;"><div style="width:36px;height:36px;background:linear-gradient(135deg,#b69d74,#d4b47a);border-radius:8px;display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f2839" stroke-width="2.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg></div><h2>Douro <span style="color:#b69d74">News</span></h2></div><div class="accent-line"></div></div><div class="card" style="border-left:3px solid #b69d74;background:linear-gradient(135deg,var(--surface),rgba(182,157,116,.04));padding:20px 24px;"><div id="newsInsight"><p style="color:var(--text3);font-style:italic;text-align:center;padding:12px 0;">Carregando insight...</p></div></div><div id="newsMarket" style="background:#1f2839;border-radius:10px;padding:14px 20px;display:flex;gap:32px;flex-wrap:wrap;margin:4px 0;min-height:52px;"></div><div id="newsCards"></div><div id="newsRF" style="margin-top:24px;"></div><div id="newsWeekly" style="margin-top:12px;"></div>`;
+  }
   const nd   = typeof NEWS_DATA !== 'undefined' ? NEWS_DATA : {};
   const news = nd.noticias || [];
   const ctx  = nd.ctx      || {};
@@ -3265,12 +3325,22 @@ function _notifRenderFR() {
 }
 
 function buildNotificacoes() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-notificacoes');
+  if (_pg && !document.getElementById('notifAlertasGrid')) {
+    _pg.innerHTML = `<div class="section-header" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:14px;"><div style="width:36px;height:36px;background:linear-gradient(135deg,#2fa874,#3cd28a);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(47,168,116,.35);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d1f17" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div><h2 style="margin:0">Notificações <span style="color:#3cd28a">& Alertas</span></h2><div style="font-size:11px;color:var(--text3);margin-top:2px">Variações de spread/taxa · Fatos Relevantes CVM</div></div></div><div class="accent-line" style="background:linear-gradient(90deg,#2fa874,transparent);"></div></div><div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;">Janela:</span><button class="notif-janela-btn active" data-janela="all" onclick="_notifSetJanela('all',this)">Todas</button><button class="notif-janela-btn" data-janela="1d" onclick="_notifSetJanela('1d',this)">1 dia</button><button class="notif-janela-btn" data-janela="7d" onclick="_notifSetJanela('7d',this)">7 dias</button><button class="notif-janela-btn" data-janela="21d" onclick="_notifSetJanela('21d',this)">21 dias</button><span style="margin-left:12px;font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600;letter-spacing:.08em;">Tipo:</span><button class="notif-janela-btn active" data-tipo="all" onclick="_notifSetTipo('all',this)">Todos</button><button class="notif-janela-btn" data-tipo="spread" onclick="_notifSetTipo('spread',this)">Spread</button><button class="notif-janela-btn" data-tipo="taxa" onclick="_notifSetTipo('taxa',this)">Taxa</button></div><div id="notifKpiStrip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;"></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="width:3px;height:3px;border-radius:50%;background:#3cd28a;flex-shrink:0;"></div><span style="font-size:10px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;color:var(--text3);">Alertas de Spread & Taxa</span><div style="flex:1;height:1px;background:var(--border);"></div><span id="notifAlertasCount" style="font-size:10px;color:#3cd28a;font-weight:600;"></span></div><div id="notifAlertasGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:32px;"></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="width:3px;height:3px;border-radius:50%;background:#3cd28a;flex-shrink:0;"></div><span style="font-size:10px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;color:var(--text3);">Fatos Relevantes CVM — Empresas da Carteira</span><div style="flex:1;height:1px;background:var(--border);"></div><span id="notifFRCount" style="font-size:10px;color:#3cd28a;font-weight:600;"></span></div><div style="margin-bottom:12px;position:relative;max-width:320px;"><svg style="position:absolute;left:9px;top:8px;width:13px;height:13px;stroke:var(--text3);fill:none;pointer-events:none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="notifFRSearch" oninput="_notifRenderFR()" placeholder="Filtrar empresa ou assunto..." style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px 7px 28px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;width:100%;transition:border-color .2s" onfocus="this.style.borderColor='#3cd28a'" onblur="this.style.borderColor='var(--border)'"></div><div id="notifFRCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;"></div>`;
+  }
   _notifRenderAlertas();
   _notifRenderFR();
 }
 
 // ── SCORECARD ─────────────────────────────────────────────────────────────
 function buildScorecard() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-scorecard');
+  if (_pg && !document.getElementById('scorecardFrame')) {
+    _pg.innerHTML = `<iframe id="scorecardFrame" src="" style="width:100%;height:100%;border:none;display:block;" allowfullscreen></iframe>`;
+  }
   const frame = document.getElementById('scorecardFrame');
   if (!frame) return;
   // Só carrega o src na primeira vez que a página é aberta
@@ -3507,7 +3577,7 @@ function _extractEmissor(norm) {
 // Para cada emissor da carteira, gera automaticamente frases para cada intent.
 // Isso garante cobertura total sem precisar hardcodar cada nome.
 function _buildEmissorPhrases() {
-  const emissores = [...new Set(ATIVOS.map(a=>a.emissor).filter(Boolean))];
+  const emissores = (typeof ATIVOS !== 'undefined' && Array.isArray(ATIVOS)) ? [...new Set(ATIVOS.map(a=>a.emissor).filter(Boolean))] : [];
   const n = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 
   const sintese_kw   = [], sintese_ex   = [];
