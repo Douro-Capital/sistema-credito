@@ -41,6 +41,7 @@ export default function RootLayout({
           // @ts-ignore
           defer={false}
         />
+        <script src="/dashboard-init.js" defer />
       </head>
       <body>{children}</body>
     </html>

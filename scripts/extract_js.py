@@ -1,4 +1,4 @@
-"""
+'''
 extract_js.py
 =============
 Extrai o JavaScript do HTML_TEMPLATE do script Python e salva em
@@ -17,7 +17,7 @@ Uso:
     python scripts/extract_js.py
 
 Execute na raiz do projeto Next.js (pasta Lançamento/).
-"""
+'''
 
 import re
 import sys
@@ -206,7 +206,7 @@ window.initDashboard = function() {
         f.write(final_js)
 
     size_kb = OUTPUT_FILE.stat().st_size / 1024
-    print(f"  ✓ dashboard-init.js gerado!")
+    print("  OK dashboard-init.js gerado!")
     print(f"  Tamanho: {size_kb:.0f} KB")
     print(f"\n{'='*52}")
     print("  Próximo passo: npm run dev")
