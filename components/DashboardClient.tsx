@@ -5,18 +5,22 @@ import { useEffect } from 'react'
 export interface DashboardData {
   ativos: unknown[]
   fin_series: Record<string, unknown>
+  fatos_rj: unknown[]
   rank_corp: unknown[]
   rank_bancos: unknown[]
   spreads_ts: Record<string, unknown>
   perf_data: unknown
   bonds_info: unknown[]
   bonds_ts: Record<string, unknown>
+  retorno_diario_ts: Record<string, unknown>
+  compras_vendas: unknown[]
   setores: string[]
   pl_total: number
   pl_por_carteira: Record<string, number>
   news_data: unknown
   alertas: unknown[]
   fatos_relevantes: unknown[]
+  scorecard_src: string
   bcb_live: Record<string, unknown>
   build_info: unknown
   carteiras: string[]
@@ -28,12 +32,15 @@ declare global {
   interface Window {
     ATIVOS: unknown
     FIN_SERIES: unknown
+    FATOS_RJ: unknown
     RANK_CORP: unknown
     RANK_BANCOS: unknown
     SPREADS_TS: unknown
     PERF_DATA: unknown
     BONDS_INFO: unknown
     BONDS_TS: unknown
+    RETORNO_DIARIO_TS: unknown
+    COMPRAS_VENDAS: unknown
     setores: unknown
     PL_TOTAL: unknown
     PL_POR_CARTEIRA: unknown
@@ -46,7 +53,6 @@ declare global {
     COLORS: string[]
     showPage: (id: string, el: HTMLElement | null) => void
     buildHome: () => void
-    initDashboard: () => void
   }
 }
 
@@ -55,36 +61,35 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
     // ── Injeta todas as variáveis globais que o dashboard-init.js espera ──
     window.ATIVOS             = data.ativos
     window.FIN_SERIES         = data.fin_series
+    window.FATOS_RJ           = data.fatos_rj ?? []
     window.RANK_CORP          = data.rank_corp
     window.RANK_BANCOS        = data.rank_bancos
     window.SPREADS_TS         = data.spreads_ts
     window.PERF_DATA          = data.perf_data
     window.BONDS_INFO         = data.bonds_info
     window.BONDS_TS           = data.bonds_ts
+    window.RETORNO_DIARIO_TS  = data.retorno_diario_ts ?? {}
+    window.COMPRAS_VENDAS     = data.compras_vendas ?? []
     window.setores            = data.setores
     window.PL_TOTAL           = data.pl_total
     window.PL_POR_CARTEIRA    = data.pl_por_carteira
     window.NEWS_DATA          = data.news_data
     window.ALERTAS_NOTIF      = data.alertas
     window.FATOS_RELEVANTES   = data.fatos_relevantes
-    window.SCORECARD_SRC      = '/scorecard.html'
+    window.SCORECARD_SRC      = data.scorecard_src ?? '/scorecard.html'
     window.BCB_LIVE           = data.bcb_live
     window.BUILD_INFO         = data.build_info
 
     // ── Dispara a inicialização do dashboard após variáveis estarem prontas ──
-    if (typeof window.initDashboard === 'function') {
-      window.initDashboard()
-    } else {
-      // dashboard-init.js ainda está carregando — aguarda
-      const interval = setInterval(() => {
-        if (typeof window.initDashboard === 'function') {
-          clearInterval(interval)
-          window.initDashboard()
-        }
-      }, 100)
-      // Timeout de segurança
-      setTimeout(() => clearInterval(interval), 10000)
+    // Aguarda showPage estar disponível (dashboard-init.js pode ainda estar carregando)
+    const trigger = () => {
+      if (typeof window.showPage === 'function') {
+        window.showPage('home', null)
+      } else {
+        setTimeout(trigger, 50)
+      }
     }
+    trigger()
   }, [data])
 
   // Opções dos dropdowns construídas a partir dos dados
