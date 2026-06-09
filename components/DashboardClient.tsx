@@ -170,6 +170,12 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         </div>
 
         <div className="nav-section">RANKING</div>
+        <div className="nav-item" onClick={() => window.showPage?.('ranking', null)}>
+          <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+          <span>Ranking</span>
+        </div>
         <div className="nav-item" onClick={() => window.showPage?.('scorecard', null)}>
           <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
@@ -370,6 +376,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
         {/* NOTIFICAÇÕES */}
         <div id="page-notificacoes" className="page content" />
+
+        {/* RANKING */}
+        <div id="page-ranking" className="page content" />
 
         {/* SCORECARD */}
         <div id="page-scorecard" className="page content" />
