@@ -682,6 +682,24 @@ function homeDiveEmp(empresa) {
 
 // ── HOME — COMMAND CENTER ─────────────────────────────────────────────────
 function buildHome() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-home');
+  if (_pg && !document.getElementById('homeKpiRow')) {
+    _pg.innerHTML = `
+      <div class="section-header"><h2>Visão Geral da Carteira</h2><span id="homeDataRef" class="data-ref"></span></div>
+      <div class="home-kpi-row" id="homeKpiRow"></div>
+      <div class="home-grid-main">
+        <div class="h320"><canvas id="homeChartEmissor"></canvas></div>
+        <div class="h320"><canvas id="homeChartClasse"></canvas></div>
+      </div>
+      <div class="home-grid-bottom">
+        <div id="homeTop5Corp"></div>
+        <div id="homeTop5Bancos"></div>
+      </div>
+      <div class="home-grid-banks">
+        <div class="h260"><canvas id="homeChartPerf"></canvas></div>
+      </div>`;
+  }
   const cartSel    = document.getElementById('carteiraFilter').value;
   const ativosBase = cartSel ? ATIVOS.filter(a => a.carteira === cartSel) : ATIVOS;
   const ativos     = ativosBase.filter(a => (a.saldo || 0) > 0);
@@ -835,6 +853,21 @@ function buildHome() {
 
 // ── COMPOSIÇÃO ─────────────────────────────────────────────────────────────
 function buildComposicao() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-composicao');
+  if (_pg && !document.getElementById('kpiRow')) {
+    _pg.innerHTML = `
+      <div class="kpi-row" id="kpiRow"></div>
+      <div class="grid-2-1">
+        <div class="h320"><canvas id="emChart"></canvas></div>
+        <div id="donutArea" class="h320"></div>
+      </div>
+      <div class="section-header" style="margin-top:24px"><h2>Posições por Ativo</h2></div>
+      <div id="filterBarArea"></div>
+      <div id="ativosTableWrap"><table class="data-table"><thead><tr>
+        <th>Ticker</th><th>Emissor</th><th>Classe</th><th>Rating</th><th>Status</th><th>Vencimento</th><th>Duration</th><th>Spread</th><th>Saldo</th><th>% Cart.</th>
+      </tr></thead><tbody id="ativosBody"></tbody></table></div>`;
+  }
   const ativos = getFiltered();
 const carteiraSelecionada =
   document.getElementById('carteiraFilter')?.value || '';
@@ -1067,6 +1100,24 @@ if (canvasEmissor) { canvasEmissor.width = larguraGrafico; canvasEmissor.height 
 
 // ── RATING ─────────────────────────────────────────────────────────────────
 function buildRating() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-rating');
+  if (_pg && !document.getElementById('chartClasse')) {
+    _pg.innerHTML = `
+      <div class="grid-3">
+        <div class="h260"><canvas id="chartClasse"></canvas></div>
+        <div class="h260"><canvas id="chartRatingMkt"></canvas></div>
+        <div class="h260"><canvas id="chartRatingDouro"></canvas></div>
+      </div>
+      <div style="margin-top:16px">
+        <div id="emFiltroTagRating"></div>
+        <span id="countAtivosRating"></span>
+        <input id="ativosSearchRating" type="text" placeholder="Buscar...">
+      </div>
+      <table class="data-table"><thead><tr>
+        <th>Carteira</th><th>Ticker</th><th>Emissor</th><th>Setor</th><th>Classe</th><th>Rating Mkt</th><th>Rating Douro</th><th>Status</th><th>Saldo</th><th>% PL</th><th>Lim.%</th>
+      </tr></thead><tbody id="tbodyAtivosRating"></tbody></table>`;
+  }
   const carteiraSelecionada = document.getElementById('carteiraFilter')?.value || '';
   const plFiltrado = carteiraSelecionada ? (PL_POR_CARTEIRA[carteiraSelecionada] || 0) : PL_TOTAL;
   const ativos       = getFiltered();
@@ -1272,6 +1323,17 @@ function setTimelineDesign(n) {
   buildTimeline();
 }
 function buildTimeline() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-timeline');
+  if (_pg && !document.getElementById('timelineList')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <select id="timelineCompanyFilter"><option value="">Todas as empresas</option></select>
+        <input id="timelineSearch" type="text" placeholder="Buscar evento...">
+        <span id="timelineCount" style="font-size:12px;color:var(--text3)"></span>
+      </div>
+      <div id="timelineList"></div>`;
+  }
   timelineInitSels();
   const company = document.getElementById('timelineCompanyFilter')?.value || '';
   const query = (document.getElementById('timelineSearch')?.value || '').toLowerCase().trim();
@@ -1799,6 +1861,43 @@ function finAddAll()    { finGetEmpsDisp().forEach(e => finSelecionadas.add(e));
 function finRemoveAll() { finSelecionadas.clear(); finRenderEmpList(); buildFinanceiros(); }
 function finOnSetorChange() { finRenderEmpList(); }
 function buildFinanceiros() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-financeiros');
+  if (_pg && !document.getElementById('indFinSel')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <select id="setorFinSel"><option value="">Todos os Setores</option></select>
+        <input id="finEmpSearch" type="text" placeholder="Buscar empresa...">
+        <span id="finEmpCount" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+      <div id="finEmpList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+      <div id="finChipsWrap" style="margin-bottom:12px"></div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <select id="indFinSel"></select>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="range" id="finRangeMin" min="0" max="10" value="0">
+          <div id="finRangeFill"></div>
+          <input type="range" id="finRangeMax" min="0" max="10" value="10">
+          <span id="finDateRangeLabel" style="font-size:11px;color:var(--text3)"></span>
+        </div>
+      </div>
+      <div id="finTitle" style="font-size:13px;font-weight:600;margin-bottom:8px"></div>
+      <div class="h320"><canvas id="chartFinMain"></canvas></div>
+      <div style="margin-top:24px">
+        <input id="finPainelSearch" type="text" placeholder="Buscar...">
+        <table class="data-table"><thead><tr>
+          <th>Empresa <span id="_fpsh_empresa">↕</span></th>
+          <th>Setor <span id="_fpsh_setor">↕</span></th>
+          <th>Receita <span id="_fpsh_rec">↕</span></th>
+          <th>EBITDA <span id="_fpsh_ebt">↕</span></th>
+          <th>Mg EBITDA <span id="_fpsh_mg">↕</span></th>
+          <th>DL/EBITDA <span id="_fpsh_dl">↕</span></th>
+          <th>Estr. Cap. <span id="_fpsh_ec">↕</span></th>
+          <th>ROE <span id="_fpsh_roe">↕</span></th>
+          <th>Liq. Corr. <span id="_fpsh_lc">↕</span></th>
+        </tr></thead><tbody id="tbodyFin"></tbody></table>
+      </div>`;
+  }
   if (!finInicializado) { finInitSels(); finInicializado = true; }
   finRenderEmpList();
   const ind      = document.getElementById('indFinSel').value;
@@ -1933,6 +2032,38 @@ function _fundInitSel() {
 }
 
 function buildFundamentos() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-fundamentos');
+  if (_pg && !document.getElementById('fundEmpSel')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+        <input id="fundSearch" type="text" placeholder="Buscar empresa..." oninput="fundFilterList()">
+        <select id="fundEmpSel" onchange="buildFundamentos()"></select>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="range" id="fundRangeMin" min="0" max="10" value="0" oninput="fundRangeUpdate(event)">
+          <div id="fundRangeFill"></div>
+          <input type="range" id="fundRangeMax" min="0" max="10" value="10" oninput="fundRangeUpdate(event)">
+          <span id="fundDateRangeLabel" style="font-size:11px;color:var(--text3)"></span>
+        </div>
+        <button onclick="exportarPDFFundamentos()" style="margin-left:auto">Exportar PDF</button>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+        <div class="card" style="min-width:120px"><div style="font-size:10px;color:var(--text3)">Setor</div><div id="fundInfoSetor" style="font-weight:600"></div></div>
+        <div class="card" style="min-width:160px"><div style="font-size:10px;color:var(--text3)">Referência</div><div id="fundInfoData" style="font-size:11px"></div></div>
+        <div class="card"><div style="font-size:10px;color:var(--text3)">Receita TTM</div><div id="fundKpiRec" style="font-weight:700"></div></div>
+        <div class="card"><div style="font-size:10px;color:var(--text3)">EBITDA TTM</div><div id="fundKpiEbt" style="font-weight:700"></div></div>
+        <div class="card"><div style="font-size:10px;color:var(--text3)">DL/EBITDA</div><div id="fundKpiDl" style="font-weight:700"></div></div>
+        <div class="card"><div style="font-size:10px;color:var(--text3)">Liq. Corrente</div><div id="fundKpiLc" style="font-weight:700"></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="h320"><canvas id="fundChartPL"></canvas></div>
+        <div class="h320"><canvas id="fundChartMg"></canvas></div>
+      </div>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="h320"><canvas id="fundChartLev"></canvas></div>
+        <div class="h320"><canvas id="fundChartCF"></canvas></div>
+      </div>`;
+  }
   if (!_fundIniciado) { _fundInitSel(); _fundIniciado = true; fundRangeInit(); }
   const sel  = document.getElementById('fundEmpSel');
   if (!sel || !sel.value) return;
@@ -2608,6 +2739,42 @@ function _bcbLookup(nome) {
 let _bancosIniciado = false;
 
 function buildBancos(preselect) {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-bancos');
+  if (_pg && !document.getElementById('bancosEmpSel')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+        <select id="bancosEmpSel" onchange="buildBancos()"></select>
+        <button onclick="exportarPDFBancos()" style="margin-left:auto">Exportar PDF</button>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+        <div class="card"><div style="font-size:10px;color:var(--text3)">Basileia</div><div id="bancoKpiBasileia" style="font-weight:700"></div></div>
+        <div class="card"><div style="font-size:10px;color:var(--text3)">ROE</div><div id="bancoKpiROE" style="font-weight:700"></div></div>
+        <div class="card"><div style="font-size:10px;color:var(--text3)">Inadimplência</div><div id="bancoKpiNPL" style="font-weight:700"></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="h280"><canvas id="bancoChartBasileia"></canvas></div>
+        <div class="h280"><canvas id="bancoChartRent"></canvas></div>
+      </div>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="h280"><canvas id="bancoChartCredit"></canvas></div>
+        <div class="h280"><canvas id="bancoChartEfic"></canvas></div>
+      </div>
+      <div style="margin-top:24px">
+        <input id="bancosSearch" type="text" placeholder="Buscar banco..." oninput="_renderTbodyBancosComp()">
+        <table class="data-table"><thead><tr>
+          <th>Banco <span id="_bcsh_nome">↕</span></th>
+          <th>Basileia <span id="_bcsh_basileia">↕</span></th>
+          <th>Tier 1 <span id="_bcsh_tier1">↕</span></th>
+          <th>ROE <span id="_bcsh_roe">↕</span></th>
+          <th>NIM <span id="_bcsh_nim">↕</span></th>
+          <th>Inadimpl. <span id="_bcsh_inadimpl">↕</span></th>
+          <th>Eficiência <span id="_bcsh_eficiencia">↕</span></th>
+          <th>Rating <span id="_bcsh_rating">↕</span></th>
+          <th>Status <span id="_bcsh_status">↕</span></th>
+        </tr></thead><tbody id="tbodyBancos"></tbody></table>
+      </div>`;
+  }
   const sel = document.getElementById('bancosEmpSel');
   if (!sel) return;
   if (!_bancosIniciado) {
@@ -2757,6 +2924,33 @@ function _renderTbodyBancosComp(){
 }
 
 function buildSpreads() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-spreads');
+  if (_pg && !document.getElementById('chartSpTaxa')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <select id="spClasseSel" onchange="spGetAtivosDisp&&spRenderAtivoList()"><option value="">Todas as Classes</option></select>
+        <select id="spSetorSel" onchange="spGetAtivosDisp&&spRenderAtivoList()"><option value="">Todos os Setores</option></select>
+        <select id="spEmsSel" onchange="spGetAtivosDisp&&spRenderAtivoList()"><option value="">Todos os Emissores</option></select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <span id="spAtivoCount" style="font-size:11px;color:var(--text3)"></span>
+        <div id="spAtivoList" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <div id="spChipsWrap" style="margin-bottom:12px"></div>
+      <div class="grid-2">
+        <div class="h280"><canvas id="chartSpTaxa"></canvas></div>
+        <div class="h280"><canvas id="chartSpSpread"></canvas></div>
+      </div>
+      <div class="h280" style="margin-top:16px"><canvas id="chartSpScatter"></canvas></div>
+      <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <input id="spreadsSearch" type="text" placeholder="Buscar ativo..." oninput="_renderTbodySpreads()">
+        <label><input type="checkbox" id="spSoSelecionados" onchange="buildSpreads()"> Só selecionados</label>
+      </div>
+      <table class="data-table"><thead><tr>
+        <th>Ticker</th><th>Emissor</th><th>Setor</th><th>NTN-B Ref.</th><th>Classe</th><th>Taxa</th><th>Spread</th><th>Duration</th><th>Status</th>
+      </tr></thead><tbody id="tbodySpreads"></tbody></table>`;
+  }
   // NÃO chame spInitSels() aqui — só popula na primeira vez
   if (!spInicializado) {
     spInitSels();
@@ -2926,6 +3120,25 @@ function calcDistribuicao(valores, pontos=60) {
   return { xs, ys };
 }
 function buildTunel() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-tunel');
+  if (_pg && !document.getElementById('ativoTunelSel')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+        <select id="ativoTunelSel" onchange="buildTunel()"></select>
+      </div>
+      <div class="grid-2">
+        <div class="h280"><canvas id="chartTunelTaxa"></canvas></div>
+        <div class="h220"><canvas id="chartHistTunelTaxa"></canvas></div>
+      </div>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="h280"><canvas id="chartTunelSpread"></canvas></div>
+        <div class="h220"><canvas id="chartHistTunelSpread"></canvas></div>
+      </div>
+      <table class="data-table" style="margin-top:16px"><thead><tr>
+        <th>Ticker</th><th>Emissor</th><th>Setor</th><th>Duration</th><th>Taxa</th><th>Spread</th><th>Mediana Spread</th><th>+1 MAD</th><th>-1 MAD</th><th>Z-Score</th><th>Vol Spread</th><th>Status</th>
+      </tr></thead><tbody id="tbodyTunel"></tbody></table>`;
+  }
   const ativosCarteira = getFiltered().map(a => a.ticker);
   const ativos = Object.keys(SPREADS_TS).filter(a => ativosCarteira.includes(a));
   const sel = document.getElementById('ativoTunelSel');
@@ -3039,6 +3252,29 @@ function bondRenderChips() {
 function bondAddAll()    { bondsFiltrados.forEach(b=>bondsSelecionados.add(b)); bondRenderList(); buildBonds(); }
 function bondRemoveAll() { bondsSelecionados.clear(); bondRenderList(); buildBonds(); }
 function buildBonds() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-bonds');
+  if (_pg && !document.getElementById('bondList')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <input id="bondSearch" type="text" placeholder="Buscar bond..." oninput="bondFilterList()">
+        <button onclick="bondAddAll()">Todos</button>
+        <button onclick="bondRemoveAll()">Limpar</button>
+        <span id="bondCount" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+      <div id="bondList" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px"></div>
+      <div id="bondChipsWrap" style="margin-bottom:12px"></div>
+      <div class="h280"><canvas id="chartBondsPreco"></canvas></div>
+      <div style="margin-top:16px">
+        <input id="bondsSearch" type="text" placeholder="Buscar..." oninput="_renderTbodyBonds()">
+        <table class="data-table"><thead><tr>
+          <th>Ticker <span id="_bsh_ticker">↕</span></th>
+          <th>Emissor <span id="_bsh_emissor">↕</span></th>
+          <th>Status <span id="_bsh_status">↕</span></th>
+          <th>Preço <span id="_bsh_preco">↕</span></th>
+        </tr></thead><tbody id="tbodyBonds"></tbody></table>
+      </div>`;
+  }
   if (!bondsInicializado) { bondInitSels(); bondsInicializado=true; } else bondRenderList();
   const bondsPlot = [...bondsSelecionados];
   if (!bondsPlot.length) {
@@ -3177,7 +3413,47 @@ function buildRankingComparativo() {
   const allStatus=[...new Set([...Object.keys(byStCorp),...Object.keys(byStBanc)])].sort((a,b)=>{const i=statusOrd.indexOf(a),j=statusOrd.indexOf(b);return(i<0?99:i)-(j<0?99:j);});
   mk('chartCompStatus',{type:'bar',data:{labels:allStatus,datasets:[{label:'Corporativos',data:allStatus.map(s=>byStCorp[s]||0),backgroundColor:allStatus.map(s=>statusColor(s)+'aa'),borderColor:allStatus.map(s=>statusColor(s)),borderWidth:1,borderRadius:3},{label:'Bancos',data:allStatus.map(s=>byStBanc[s]||0),backgroundColor:allStatus.map(s=>statusColor(s)+'55'),borderColor:allStatus.map(s=>statusColor(s)),borderWidth:1,borderRadius:3}]},options:{...CHART_DEFAULTS,plugins:{...CHART_DEFAULTS.plugins,legend:{display:true,position:'bottom',labels:{color:'#718096',font:{size:10},boxWidth:10}}},scales:{x:{...CHART_DEFAULTS.scales.x},y:{...CHART_DEFAULTS.scales.y,ticks:{...CHART_DEFAULTS.scales.y.ticks,stepSize:1}}}}});
 }
-function buildRanking() { buildRankingCorp(); buildRankingBancos(); }
+function buildRanking() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-ranking');
+  if (_pg && !document.getElementById('tbodyRankCorp')) {
+    _pg.innerHTML = `
+      <div id="subpage-corporativo">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+          <input id="rankCorpSearch" type="text" placeholder="Buscar..." oninput="_renderRankCorp()">
+        </div>
+        <div class="h220"><canvas id="chartRankingStatus"></canvas></div>
+        <table class="data-table"><thead><tr>
+          <th>Empresa <span id="_rcsh_empresa">↕</span></th>
+          <th>Setor <span id="_rcsh_setor">↕</span></th>
+          <th>Rating Mkt <span id="_rcsh_ratingMkt">↕</span></th>
+          <th>Rating Douro <span id="_rcsh_ratingDouro">↕</span></th>
+          <th>Status <span id="_rcsh_status">↕</span></th>
+        </tr></thead><tbody id="tbodyRankCorp"></tbody></table>
+      </div>
+      <div id="subpage-bancario" style="display:none">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+          <input id="rankBancosSearch" type="text" placeholder="Buscar banco..." oninput="_renderRankBancos()">
+        </div>
+        <div class="h220"><canvas id="chartRankingBancosBar"></canvas></div>
+        <table class="data-table"><thead><tr>
+          <th>Banco <span id="_rbsh_empresa">↕</span></th>
+          <th>Rating Douro <span id="_rbsh_ratingDouro">↕</span></th>
+          <th>Status <span id="_rbsh_status">↕</span></th>
+        </tr></thead><tbody id="tbodyRankBancos"></tbody></table>
+      </div>
+      <div id="subpage-comparativo" style="display:none">
+        <div class="h220"><canvas id="chartCompStatus"></canvas></div>
+        <table class="data-table"><thead><tr>
+          <th>Empresa</th><th>Setor</th><th>Rating Mkt</th><th>Rating Douro</th><th>Status</th>
+        </tr></thead><tbody id="tbodyCompCorp"></tbody></table>
+        <table class="data-table" style="margin-top:16px"><thead><tr>
+          <th>Banco</th><th>Rating Douro</th><th>Status</th>
+        </tr></thead><tbody id="tbodyCompBancos"></tbody></table>
+      </div>`;
+  }
+  buildRankingCorp(); buildRankingBancos();
+}
 function showRankingPage(sub, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -3194,6 +3470,20 @@ function showRankingPage(sub, el) {
 }
 // ── PERFORMANCE ───────────────────────────────────────────────────────────
 function buildPerformance() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-performance');
+  if (_pg && !document.getElementById('chartPerfAcum')) {
+    _pg.innerHTML = `
+      <div class="h320"><canvas id="chartPerfAcum"></canvas></div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+        <label style="font-size:12px">Janela: <input id="janelaPerf" type="number" value="21" min="5" max="252" style="width:60px" onchange="buildPerformance()"></label>
+      </div>
+      <div class="h280" style="margin-top:12px"><canvas id="chartRolling"></canvas></div>
+      <table class="data-table" style="margin-top:16px"><thead><tr>
+        <th>Ativo</th><th>Vol.</th><th>Drawdown</th><th>Retorno Total</th>
+      </tr></thead><tbody id="tbodyPerf"></tbody></table>
+      <div id="corrTable" style="margin-top:16px;overflow-x:auto"></div>`;
+  }
   const ativos = Object.keys(PERF_DATA.ativos);
   const datasets = ativos.map((a,i)=>({ label:a, data:PERF_DATA.ativos[a].retorno_acum.map(v=>v*100), borderColor:COLORS[i%COLORS.length], backgroundColor:'transparent', tension:.3, pointRadius:0, borderWidth:2 }));
   mk('chartPerfAcum',{ type:'line', data:{ labels:PERF_DATA.datas, datasets }, options:{
@@ -3234,6 +3524,20 @@ function buildPerformance() {
 }
 // ── DOURO NEWS ────────────────────────────────────────────────────────────
 function buildDouroNews() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-douro-news');
+  if (_pg && !document.getElementById('newsInsight')) {
+    _pg.innerHTML = `
+      <div id="newsInsight" style="margin-bottom:24px"></div>
+      <div id="newsMarket" style="margin-bottom:24px;display:flex;gap:24px;flex-wrap:wrap"></div>
+      <div class="grid-2-1" style="align-items:start">
+        <div id="newsCards"></div>
+        <div>
+          <div id="newsRF" style="margin-bottom:16px"></div>
+          <div id="newsWeekly"></div>
+        </div>
+      </div>`;
+  }
   const nd   = typeof NEWS_DATA !== 'undefined' ? NEWS_DATA : {};
   const news = nd.noticias || [];
   const ctx  = nd.ctx      || {};
@@ -3948,6 +4252,34 @@ function _notifBuildBriefing() {
 }
 
 function buildNotificacoes() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-notificacoes');
+  if (_pg && !document.getElementById('notifPanelAlertas')) {
+    _pg.innerHTML = `
+      <div id="notifBriefingText" style="margin-bottom:16px;font-size:13px;color:var(--text2)"></div>
+      <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px">
+        <button id="notifTabAlertas" class="notif-tab-btn" onclick="_notifSetTab('alertas')" style="border-bottom:2px solid #00677b;color:#00677b;padding:10px 16px;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;font-size:12px;font-weight:600">Alertas <span id="notifBadgeAlertas" style="display:none;background:#d94141;color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:4px"></span></button>
+        <button id="notifTabFatos" class="notif-tab-btn" onclick="_notifSetTab('fatos')" style="border-bottom:2px solid transparent;color:var(--text3);padding:10px 16px;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;font-size:12px;font-weight:600">Fatos Relevantes</button>
+        <button id="notifTabExposicao" class="notif-tab-btn" onclick="_notifSetTab('exposicao')" style="border-bottom:2px solid transparent;color:var(--text3);padding:10px 16px;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;font-size:12px;font-weight:600">Exposição <span id="notifBadgeExposicao" style="display:none;background:#d94141;color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:4px"></span></button>
+      </div>
+      <div id="notifPanelAlertas">
+        <div id="notifKpiStrip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <span id="notifAlertasCount" style="font-size:11px;color:var(--text3)"></span>
+        </div>
+        <div id="notifAlertasGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div>
+      </div>
+      <div id="notifPanelFatos" style="display:none">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+          <span id="notifFRCount" style="font-size:11px;color:var(--text3)"></span>
+          <input id="notifFRSearch" type="text" placeholder="Buscar fato..." oninput="_notifRenderFR()">
+        </div>
+        <div id="notifFRTable"></div>
+      </div>
+      <div id="notifPanelExposicao" style="display:none">
+        <div id="notifExposicaoWrap"></div>
+      </div>`;
+  }
   _notifSetTab('alertas');
   _notifBuildBriefing();
   // Count badges
@@ -3962,6 +4294,11 @@ function buildNotificacoes() {
 
 // ── SCORECARD ─────────────────────────────────────────────────────────────
 function buildScorecard() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-scorecard');
+  if (_pg && !document.getElementById('scorecardFrame')) {
+    _pg.innerHTML = `<iframe id="scorecardFrame" style="width:100%;height:calc(100vh - 80px);border:none;border-radius:8px"></iframe>`;
+  }
   const frame = document.getElementById('scorecardFrame');
   if (!frame) return;
   // Só carrega o src na primeira vez que a página é aberta
@@ -4426,6 +4763,49 @@ function _cvPopulateCarteiraCompar() {
 
 let _cvBuilt = false;
 function buildComprasVendas() {
+  if (typeof ATIVOS === 'undefined' || !ATIVOS) return;
+  const _pg = document.getElementById('page-compras-vendas');
+  if (_pg && !document.getElementById('tbodyCv')) {
+    _pg.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <input id="cvSearch" type="text" placeholder="Buscar ativo ou portfólio..." oninput="_cvDebounce()">
+        <select id="cvTipoAtivoSel" onchange="_cvRender()"><option value="">Todos os Tipos</option></select>
+        <input id="cvDtIni" type="date" onchange="_cvRender()">
+        <input id="cvDtFim" type="date" onchange="_cvRender()">
+        <button onclick="_cvResetFil()">Limpar</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="cv-fil-btn active" onclick="_cvSetFil('todos',this)">Todos</button>
+        <button class="cv-fil-btn" onclick="_cvSetFil('c',this)">Compras</button>
+        <button class="cv-fil-btn" onclick="_cvSetFil('v',this)">Vendas</button>
+      </div>
+      <div id="cvKpiStrip" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+      <span id="cvCount" style="font-size:11px;color:var(--text3);margin-bottom:8px;display:block"></span>
+      <div style="overflow-x:auto">
+        <table class="data-table"><thead><tr>
+          <th id="_cvsh_data_operacao" onclick="_cvSort('data_operacao')" style="cursor:pointer">Data Op.</th>
+          <th id="_cvsh_ativo" onclick="_cvSort('ativo')" style="cursor:pointer">Ativo</th>
+          <th>Tipo</th>
+          <th>Operação</th>
+          <th id="_cvsh_quantidade" onclick="_cvSort('quantidade')" style="cursor:pointer">Qtd.</th>
+          <th id="_cvsh_preco_unitario" onclick="_cvSort('preco_unitario')" style="cursor:pointer">PU</th>
+          <th id="_cvsh_total_bruto" onclick="_cvSort('total_bruto')" style="cursor:pointer">Total</th>
+          <th id="_cvsh_data_liquidacao" onclick="_cvSort('data_liquidacao')" style="cursor:pointer">Liq.</th>
+          <th>Portfólio</th>
+          <th>Rating Douro</th>
+          <th>Lim.%</th>
+          <th>% Emissor</th>
+          <th>Excesso</th>
+        </tr></thead><tbody id="tbodyCv"></tbody></table>
+      </div>
+      <div style="margin-top:24px">
+        <div id="cvChartChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+          <select id="cvCarteiraComparSel" onchange="_cvUpdateChart()"><option value="">Nenhum benchmark</option></select>
+        </div>
+        <div class="h280"><canvas id="chartCvPU"></canvas></div>
+      </div>`;
+  }
   _cvPopulateCarteiraCompar();
   if (!_cvBuilt) {
     _cvBuilt = true;
