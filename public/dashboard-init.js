@@ -5042,7 +5042,8 @@ function _extractEmissor(norm) {
 // Para cada emissor da carteira, gera automaticamente frases para cada intent.
 // Isso garante cobertura total sem precisar hardcodar cada nome.
 function _buildEmissorPhrases() {
-  const emissores = [...new Set(ATIVOS.map(a=>a.emissor).filter(Boolean))];
+  const _ativos = typeof ATIVOS !== 'undefined' ? ATIVOS : [];
+  const emissores = [...new Set(_ativos.map(a=>a.emissor).filter(Boolean))];
   const n = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 
   const sintese_kw   = [], sintese_ex   = [];
@@ -5127,9 +5128,9 @@ function _buildEmissorPhrases() {
     evolucao_kw, evolucao_ex, comparar_kw
   };
 }
-const _EP = _buildEmissorPhrases();
+let _EP = _buildEmissorPhrases();
 
-const _INTENT_KW = {
+let _INTENT_KW = {
   exposicao_setor:    [
     // setores nomeados
     'utilities','infraestrutura','energia eletrica','setor eletrico','papel e celulose','celulose','papel','saneamento basico','saneamento','logistica','transporte','telecomunicacoes','telecom','construcao civil','incorporacao','educacao','mineracao','quimica','petroquimica','farma','farmaceutico','bancario','banco','seguros','credito privado','consumo','luxo','tecnologia','agronegocio','agro','petroleo','gas','oleo e gas','saude','varejo','imobiliario','financeiro',
@@ -5278,6 +5279,18 @@ const _INTENT_KW = {
     'energia aprovada com','saneamento aprovado com','eletrico aprovado com','logistica com spread','papel com rating','proteina aprovada com','agro aprovado com','varejo aprovado com','financeiro aprovado com','rodovias aprovadas com','transmissao com rating','energia em watch com','saneamento em watch com','logistica em watch com','proteina em watch com','aprovados em ipca','aprovados em cdi','aprovados em prefixado','watch em proteina','watch em construcao','watch em real estate','setor eletrico aprovado e','setor de saneamento aprovado e','setor de papel aprovado e','setor de proteina aprovado e','setor de logistica aprovado e','spread alto em high yield'
   ]
 };
+
+function _rebuildDouradoKW() {
+  if (typeof ATIVOS === 'undefined') return;
+  if ((_EP.sintese_kw||[]).length > 0) return; // already built
+  _EP = _buildEmissorPhrases();
+  _INTENT_KW.exposicao_emissor.push(..._EP.exposicao_kw);
+  _INTENT_KW.comparar_emissores.push(..._EP.comparar_kw);
+  _INTENT_KW.detalhe_ativo.push(..._EP.detalhe_kw);
+  _INTENT_KW.grafico_spread.push(..._EP.grafico_kw);
+  _INTENT_KW.evolucao_fundamento.push(..._EP.evolucao_kw);
+  _INTENT_KW.sintese_emissor.push(..._EP.sintese_kw);
+}
 
 const _EXEMPLOS = {
   exposicao_setor:    ['qual exposicao em energia','quanto tenho em utilities','posicao no setor financeiro','percentual em infraestrutura','peso de energia','quanto esta alocado em financeiro','exposicao em papel','quanto em saude','quanto esta no setor eletrico','qual o peso em saneamento','quanta exposicao em logistica','o que tenho em telecomunicacoes','alocacao em celulose','posicao em construcao','quanto em mineracao','quanto em transmissao','quanto em distribuicao de energia','quanto em geracao de energia','quanto em rodovias','quanto em concessoes','quanto em portos','quanto em ferrovias','quanto em proteina','quanto em agro','quanto em alimentos','quanto em bebidas','quanto em frigorifico','quanto em quimica','quanto em petroquimica','quanto em oleo e gas','quanto em mineracao e siderurgia','quanto em aco','quanto em varejo alimentar','quanto em varejo de moda','quanto em shopping','quanto em construcao civil','quanto em incorporadora','quanto em real estate','quanto em transporte','quanto em locacao de veiculos','quanto em educacao','quanto em healthcare','quanto em hospitalar','quanto em farma','quanto em tecnologia','quanto em fintech','quanto em bancos','quanto em seguros','quanto em meios de pagamento','peso de energia eletrica','peso de saneamento','peso de papel e celulose','peso de proteina','peso do agro','peso da industria','exposicao em renda fixa','exposicao em ipca','exposicao em cdi','exposicao em prefixado','quanto em debenture incentivada','quanto em cri','quanto em cra','quanto em letra financeira'],
@@ -6471,6 +6484,7 @@ function _douradoCmd(txt) {
 }
 
 async function douradoSend() {
+  _rebuildDouradoKW();
   _dspHide();
   const input=document.getElementById('douradoInput');
   const txt=input.value.trim();
