@@ -67,7 +67,7 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
     window.NEWS_DATA          = data.news_data
     window.ALERTAS_NOTIF      = data.alertas
     window.FATOS_RELEVANTES   = data.fatos_relevantes
-    window.SCORECARD_SRC      = null
+    window.SCORECARD_SRC      = '/scorecard.html'
     window.BCB_LIVE           = data.bcb_live
     window.BUILD_INFO         = data.build_info
 
