@@ -152,7 +152,14 @@
     const bD=document.getElementById('sysToggleDiagram');
     const bT=document.getElementById('sysToggleTerminal');
     const bS=document.getElementById('sysToggleShortcuts');
-    // ── CONSTANTES ────────────────────────────────────────────────────────────
+    if (dg) dg.style.display = v==='diagram'   ? 'block' : 'none';
+    if (tm) tm.style.display = v==='terminal'  ? 'block' : 'none';
+    if (sk) sk.style.display = v==='shortcuts' ? 'block' : 'none';
+    if (bD) bD.classList.toggle('active', v==='diagram');
+    if (bT) bT.classList.toggle('active', v==='terminal');
+    if (bS) bS.classList.toggle('active', v==='shortcuts');
+  }
+  // ── CONSTANTES ────────────────────────────────────────────────────────────
 const COLORS = ['#b69d74','#00677b','#1f2839','#2fa874','#d94141','#3174b8','#a78bd4','#e0c44a','#60b85a','#d47aa7','#5ab8d4','#d4a77a'];
 /* ── CROSSHAIR PLUGIN (linha vertical que snapa em X para todas as séries) ── */
 const _crosshairPlugin = {
