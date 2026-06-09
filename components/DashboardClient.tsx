@@ -128,6 +128,12 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
           </svg>
           <span>Performance</span>
         </div>
+        <div className="nav-item" onClick={() => window.showPage?.('compras-vendas', null)}>
+          <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 8L13 16l-4-4-6 6"/><path d="M3 16l5 5"/>
+          </svg>
+          <span>Compras e Vendas</span>
+        </div>
 
         <div className="nav-section">Mercado</div>
         <div className="nav-item" onClick={() => window.showPage?.('spreads', null)}>
@@ -161,6 +167,12 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
             <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
           </svg>
           <span>Empresas</span>
+        </div>
+        <div className="nav-item" onClick={() => window.showPage?.('timeline', null)}>
+          <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M2 12h20"/><path d="M6 8l-4 4 4 4"/><path d="M18 8l4 4-4 4"/>
+          </svg>
+          <span>Eventos de Crédito</span>
         </div>
         <div className="nav-item" onClick={() => window.showPage?.('bancos', null)}>
           <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -353,6 +365,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
         {/* PERFORMANCE */}
         <div id="page-performance" className="page content" />
 
+        {/* COMPRAS E VENDAS */}
+        <div id="page-compras-vendas" className="page content" />
+
         {/* SPREADS */}
         <div id="page-spreads" className="page content" />
 
@@ -367,6 +382,9 @@ export default function DashboardClient({ data }: { data: DashboardData }) {
 
         {/* FUNDAMENTOS */}
         <div id="page-fundamentos" className="page content" />
+
+        {/* EVENTOS DE CRÉDITO */}
+        <div id="page-timeline" className="page content" />
 
         {/* BANCOS */}
         <div id="page-bancos" className="page content" />
