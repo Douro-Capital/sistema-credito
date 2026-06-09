@@ -6,44 +6,13 @@ export const metadata: Metadata = {
   description: 'Dashboard de crédito privado Douro Capital',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-        {/* Chart.js e adaptadores — carregados antes do body para estar disponíveis quando o dashboard-init.js rodar */}
-        <script
-          src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
-          // @ts-ignore
-          defer={false}
-        />
-        <script
-          src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"
-          // @ts-ignore
-          defer={false}
-        />
-        <script
-          src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-          // @ts-ignore
-          defer={false}
-        />
-        <script
-          src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-          // @ts-ignore
-          defer={false}
-        />
-        <script src="/dashboard-init.js" defer />
-      </head>
-      <body>{children}</body>
+      <head />
+      <body style={{ margin: 0, padding: 0, overflow: 'hidden', background: '#0d1520' }}>
+        {children}
+      </body>
     </html>
   )
 }
