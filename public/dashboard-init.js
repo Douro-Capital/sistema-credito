@@ -3345,19 +3345,23 @@ function buildScorecard() {
   if (!frame) return;
   // Só carrega o src na primeira vez que a página é aberta
   // Nas visitas seguintes o iframe já está carregado — não recarrega
+  const _showScorecardFallback = () => {
+    frame.srcdoc = '<html><body style="font-family:Montserrat,sans-serif;display:flex;'
+      + 'align-items:center;justify-content:center;height:100vh;margin:0;'
+      + 'background:#f4f5f0;color:#718096;flex-direction:column;gap:12px">'
+      + '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dde0d8" stroke-width="1.5">'
+      + '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
+      + '<p style="font-size:13px;font-weight:500">scorecard.html não encontrado.</p>'
+      + '<p style="font-size:11px;opacity:.6">Execute gerar_scorecard.py e faça git push.</p>'
+      + '</body></html>';
+  };
   if (!frame.src || frame.src === window.location.href || frame.src === 'about:blank') {
     if (SCORECARD_SRC && SCORECARD_SRC !== 'null') {
-      frame.src = SCORECARD_SRC;
+      fetch(SCORECARD_SRC, { method: 'HEAD' })
+        .then(r => { if (r.ok) { frame.src = SCORECARD_SRC; } else { _showScorecardFallback(); } })
+        .catch(() => _showScorecardFallback());
     } else {
-      // Fallback: scorecard não encontrado — exibir mensagem dentro do iframe
-      frame.srcdoc = '<html><body style="font-family:Montserrat,sans-serif;display:flex;'
-        + 'align-items:center;justify-content:center;height:100vh;margin:0;'
-        + 'background:#f4f5f0;color:#718096;flex-direction:column;gap:12px">'
-        + '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dde0d8" stroke-width="1.5">'
-        + '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
-        + '<p style="font-size:13px;font-weight:500">scorecard.html não encontrado.</p>'
-        + '<p style="font-size:11px;opacity:.6">Execute gerar_scorecard.py primeiro.</p>'
-        + '</body></html>';
+      _showScorecardFallback();
     }
   }
 }
