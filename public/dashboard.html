@@ -3298,7 +3298,7 @@ let _fundIniciado = false;
 let spInicializado = false;
 let douradoOpen = false;
 let _sidebarPinned = false;
-let _EP = null;
+let _EP = {exposicao_kw:[],comparar_kw:[],detalhe_kw:[],grafico_kw:[],evolucao_kw:[],sintese_kw:[],exposicao_ex:[],detalhe_ex:[],grafico_ex:[]};
 /* ── CROSSHAIR PLUGIN (linha vertical que snapa em X para todas as séries) ── */
 const _crosshairPlugin = {
   id: 'crosshair',
@@ -7887,7 +7887,7 @@ function _buildEmissorPhrases() {
 }
 // _EP inicializado em initDashboard() após dados carregarem
 
-const _INTENT_KW = {
+let _INTENT_KW = {
   exposicao_setor:    [
     // setores nomeados
     'utilities','infraestrutura','energia eletrica','setor eletrico','papel e celulose','celulose','papel','saneamento basico','saneamento','logistica','transporte','telecomunicacoes','telecom','construcao civil','incorporacao','educacao','mineracao','quimica','petroquimica','farma','farmaceutico','bancario','banco','seguros','credito privado','consumo','luxo','tecnologia','agronegocio','agro','petroleo','gas','oleo e gas','saude','varejo','imobiliario','financeiro',
@@ -8037,7 +8037,7 @@ const _INTENT_KW = {
   ]
 };
 
-const _EXEMPLOS = {
+let _EXEMPLOS = {
   exposicao_setor:    ['qual exposicao em energia','quanto tenho em utilities','posicao no setor financeiro','percentual em infraestrutura','peso de energia','quanto esta alocado em financeiro','exposicao em papel','quanto em saude','quanto esta no setor eletrico','qual o peso em saneamento','quanta exposicao em logistica','o que tenho em telecomunicacoes','alocacao em celulose','posicao em construcao','quanto em mineracao','quanto em transmissao','quanto em distribuicao de energia','quanto em geracao de energia','quanto em rodovias','quanto em concessoes','quanto em portos','quanto em ferrovias','quanto em proteina','quanto em agro','quanto em alimentos','quanto em bebidas','quanto em frigorifico','quanto em quimica','quanto em petroquimica','quanto em oleo e gas','quanto em mineracao e siderurgia','quanto em aco','quanto em varejo alimentar','quanto em varejo de moda','quanto em shopping','quanto em construcao civil','quanto em incorporadora','quanto em real estate','quanto em transporte','quanto em locacao de veiculos','quanto em educacao','quanto em healthcare','quanto em hospitalar','quanto em farma','quanto em tecnologia','quanto em fintech','quanto em bancos','quanto em seguros','quanto em meios de pagamento','peso de energia eletrica','peso de saneamento','peso de papel e celulose','peso de proteina','peso do agro','peso da industria','exposicao em renda fixa','exposicao em ipca','exposicao em cdi','exposicao em prefixado','quanto em debenture incentivada','quanto em cri','quanto em cra','quanto em letra financeira'],
   exposicao_rating:   ['exposicao em aaa','quanto tenho em braa','posicao em high grade','percentual em rating aa','alocacao em bb','emissores com rating a','exposicao investment grade','quanto em grau de investimento','posicao em high yield','quanto em junk','emissores com nota baixa','emissores com grau especulativo','quanto em subinvestimento','quanto em aaa br','quanto em aa br','quanto em a br','quanto em bbb br','quanto em bb br','peso por rating na carteira','distribuicao por rating','breakdown por rating','quebra por rating','rating average da carteira','rating medio ponderado','quais emissores rating aaa','quais emissores rating aa+','quais rating a-','quais rating bbb+','quais rating abaixo de bbb','quantos emissores high yield','peso de high yield','peso de investment grade','exposicao a credito ig','exposicao a credito hy','quanto em grau especulativo','quanto em rating de transito','quanto em nota baixa','rating mais frequente na carteira','rating mais comum'],
   exposicao_emissor:  [..._EP.exposicao_ex,'quanto tenho em petrobras','posicao em vale','exposicao a localiza','qual o peso de klabin','quanto esta alocado em suzano','posicao em rumo','tamanho da posicao em equatorial','quanto em jbs','qual o saldo em eneva','quanto temos de taesa','posicao em auren','qual a exposicao a isa','como esta a posicao de energisa','nossa posicao em cemig','minha posicao em sabesp','quanto investido em aegea'],
@@ -9355,6 +9355,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   _waitForData(function() {
     _EP = _buildEmissorPhrases();
+    if (_EP.exposicao_kw.length) _INTENT_KW.exposicao_setor    = (_INTENT_KW.exposicao_setor    || []).concat(_EP.exposicao_kw);
+    if (_EP.comparar_kw.length)  _INTENT_KW.comparar_emissores = (_INTENT_KW.comparar_emissores || []).concat(_EP.comparar_kw);
+    if (_EP.detalhe_kw.length)   _INTENT_KW.detalhe_ativo      = (_INTENT_KW.detalhe_ativo      || []).concat(_EP.detalhe_kw);
+    if (_EP.grafico_kw.length)   _INTENT_KW.grafico_spread     = (_INTENT_KW.grafico_spread     || []).concat(_EP.grafico_kw);
+    if (_EP.evolucao_kw.length)  _INTENT_KW.evolucao_fundamento= (_INTENT_KW.evolucao_fundamento|| []).concat(_EP.evolucao_kw);
+    if (_EP.sintese_kw.length)   _INTENT_KW.sintese_emissor    = (_INTENT_KW.sintese_emissor    || []).concat(_EP.sintese_kw);
+    if (_EP.exposicao_ex.length) _EXEMPLOS.exposicao_emissor   = (_EXEMPLOS.exposicao_emissor   || []).concat(_EP.exposicao_ex);
+    if (_EP.detalhe_ex.length)   _EXEMPLOS.detalhe_ativo       = (_EXEMPLOS.detalhe_ativo       || []).concat(_EP.detalhe_ex);
+    if (_EP.grafico_ex.length)   _EXEMPLOS.grafico_spread      = (_EXEMPLOS.grafico_spread      || []).concat(_EP.grafico_ex);
     initSearchableSelects();
     showPage('home', null);
     const hBtn = document.getElementById('homeBtnTopbar');
