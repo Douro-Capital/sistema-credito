@@ -25,7 +25,7 @@ from pathlib import Path
 
 SCRIPT_DIR   = Path(__file__).parent
 PROJECT_ROOT = SCRIPT_DIR.parent
-SCRIPT_PY    = PROJECT_ROOT / "Oveview Crédito.py"
+SCRIPT_PY    = PROJECT_ROOT.parent / "Oveview Crédito.py"
 OUTPUT_FILE  = PROJECT_ROOT / "public" / "dashboard-init.js"
 
 # Bloco que o Python injeta — substituído por window.* no React
