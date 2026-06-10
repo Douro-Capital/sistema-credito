@@ -693,18 +693,41 @@ function buildHome() {
   const _pg = document.getElementById('page-home');
   if (_pg && !document.getElementById('homeKpiRow')) {
     _pg.innerHTML = `
-      <div class="section-header"><h2>Visão Geral da Carteira</h2><span id="homeDataRef" class="data-ref"></span></div>
+      <div class="section-header">
+        <h2>Panorama</h2>
+        <div class="accent-line"></div>
+        <span id="homeDataRef" style="font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap;"></span>
+      </div>
       <div class="home-kpi-row" id="homeKpiRow"></div>
       <div class="home-grid-main">
-        <div class="h320"><canvas id="homeChartEmissor"></canvas></div>
-        <div class="h320"><canvas id="homeChartClasse"></canvas></div>
+        <div class="card">
+          <div class="card-title">Saldo Bruto por Emissor</div>
+          <div class="chart-scroll-wrap">
+            <div class="chart-scroll-inner" id="homeChartEmissorWrap">
+              <div style="height:300px;position:relative;"><canvas id="homeChartEmissor"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Por Classe de Ativo</div>
+          <div style="height:300px;position:relative;"><canvas id="homeChartClasse"></canvas></div>
+        </div>
       </div>
       <div class="home-grid-bottom">
-        <div id="homeTop5Corp"></div>
-        <div id="homeTop5Bancos"></div>
+        <div class="card">
+          <div class="card-title">Top 5 Corporativos — <span onclick="homeDiveScorecard('corp')" style="font-size:10px;color:var(--teal);text-transform:none;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Clique para Deep Dive →</span></div>
+          <div id="homeTop5Corp" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top 5 Bancos — <span onclick="homeDiveScorecard('banco')" style="font-size:10px;color:var(--teal);text-transform:none;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">Clique para Deep Dive →</span></div>
+          <div id="homeTop5Bancos" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
+        </div>
       </div>
       <div class="home-grid-banks">
-        <div class="h260"><canvas id="homeChartPerf"></canvas></div>
+        <div class="card">
+          <div class="card-title">Retorno Acumulado <span style="font-size:10px;color:var(--text3);text-transform:none;font-weight:400;">por carteira</span></div>
+          <div style="height:280px;position:relative;"><canvas id="homeChartPerf"></canvas></div>
+        </div>
       </div>`;
   }
   const cartSel    = document.getElementById('carteiraFilter').value;
