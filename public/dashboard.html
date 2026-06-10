@@ -3253,30 +3253,32 @@ document.getElementById('douradoFull').addEventListener('click', e => { if(e.tar
 </script>
 <script>
 (function() {
-  var _dataUrl = '/data/dashboard.json';
-  fetch(_dataUrl)
-    .then(function(r) { return r.json(); })
+  fetch('/api/data')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(d) {
-      window.ATIVOS             = d.ativos;
-      window.FIN_SERIES         = d.fin_series;
-      window.SPREADS_TS         = d.spreads_ts;
-      window.PERF_DATA          = d.perf_data;
-      window.BONDS_INFO         = d.bonds_info;
-      window.BONDS_TS           = d.bonds_ts;
-      window.RETORNO_DIARIO_TS  = d.retorno_diario_ts;
-      window.COMPRAS_VENDAS     = d.compras_vendas;
-      window.RANK_CORP          = d.rank_corp;
-      window.RANK_BANCOS        = d.rank_bancos;
-      window.NEWS_DATA          = d.news_data;
-      window.ALERTAS_NOTIF      = d.alertas;
-      window.FATOS_RELEVANTES   = d.fatos_relevantes;
-      window.FATOS_RJ           = d.fatos_rj;
-      window.BCB_LIVE           = d.bcb_live;
-      window.PL_TOTAL           = d.pl_total;
-      window.PL_POR_CARTEIRA    = d.pl_por_carteira;
-      window.setores            = d.setores;
-      window.SCORECARD_SRC      = d.scorecard_src || null;
-      window.BUILD_INFO         = d.build_info;
+      window.ATIVOS             = d.ativos             || [];
+      window.FIN_SERIES         = d.fin_series         || {};
+      window.SPREADS_TS         = d.spreads_ts         || {};
+      window.PERF_DATA          = d.perf_data          || {datas:[],ativos:{},correlacao:{labels:[],values:[]}};
+      window.BONDS_INFO         = d.bonds_info         || [];
+      window.BONDS_TS           = d.bonds_ts           || {};
+      window.RETORNO_DIARIO_TS  = d.retorno_diario_ts  || {};
+      window.COMPRAS_VENDAS     = d.compras_vendas     || [];
+      window.RANK_CORP          = d.rank_corp          || [];
+      window.RANK_BANCOS        = d.rank_bancos        || [];
+      window.NEWS_DATA          = d.news_data          || {};
+      window.ALERTAS_NOTIF      = d.alertas            || [];
+      window.FATOS_RELEVANTES   = d.fatos_relevantes   || [];
+      window.FATOS_RJ           = d.fatos_rj           || [];
+      window.BCB_LIVE           = d.bcb_live           || {};
+      window.PL_TOTAL           = d.pl_total           || 0;
+      window.PL_POR_CARTEIRA    = d.pl_por_carteira    || {};
+      window.setores            = d.setores            || [];
+      window.SCORECARD_SRC      = d.scorecard_src      || null;
+      window.BUILD_INFO         = d.build_info         || {};
       window._dashboardLoaded   = true;
     })
     .catch(function(e) {
